@@ -293,12 +293,15 @@ sap.ui.define([
 
     // 3. Cargar procesos
     fetch("http://localhost:3333/api/security/process/getAllProcesses")
-      .then(res => res.json())
-      .then(data => {
-        const oProcessModel = new JSONModel();
-        oProcessModel.setData({ values: data.value });
-        this.getView().setModel(oProcessModel, "processCatalogModel");
-      });
+    .then(res => res.json())
+    .then(data => {
+      // Filtrar procesos válidos según LABELID, por ejemplo "IdProcess"
+      const filteredProcesses = data.value.filter(p => p.LABELID === "IdProcess");
+
+      const oProcessModel = new JSONModel();
+      oProcessModel.setData({ values: filteredProcesses });
+      this.getView().setModel(oProcessModel, "processCatalogModel");
+    });
 
     // 4. Cargar privilegios
     fetch("http://localhost:3333/api/security/values/getAllValues")
@@ -392,7 +395,10 @@ sap.ui.define([
       // Cargar procesos
     const resProc = await fetch("http://localhost:3333/api/security/process/getAllProcesses");
     const dataProc = await resProc.json();
-    const oProcessModel = new JSONModel({ values: dataProc.value });
+    // Filtrar procesos válidos, por ejemplo solo donde LABELID sea 'IdProcess'
+    const filteredProcesses = dataProc.value.filter(p => p.LABELID === "IdProcess");
+
+    const oProcessModel = new JSONModel({ values: filteredProcesses });
     this.getView().setModel(oProcessModel, "processCatalogModel");
 
     // Cargar privilegios
