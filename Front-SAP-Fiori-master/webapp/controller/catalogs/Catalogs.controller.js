@@ -7,33 +7,36 @@ sap.ui.define(
     "sap/m/MessageBox",
     "sap/ui/core/Fragment",
     "sap/m/MessageToast",
-    "jquery",
   ],
-  function (Controller, JSONModel, MessageBox, Fragment, MessageToast, $) {
+  function (Controller, JSONModel, MessageBox, Fragment, MessageToast) {
     "use strict";
 
     return Controller.extend(
       "com.invertions.sapfiorimodinv.controller.catalogs.Catalogs",
       {
-        // ---------------------------------------------------- INICIO DE LA VISTA
-
         onInit: function () {
           var oModel = new JSONModel();
-          var that = this;
-
           this._oDialog = null;
-
-          $.ajax({
-            url: "http://localhost:4004/api/security/label/getAllLabels",
-            method: "GET",
-            success: function (data) {
-              oModel.setData({ value: data.value });
-              that.getView().setModel(oModel);
-            },
-          });
+          this.getView().setModel(oModel);
+          this.loadLabels();
         },
 
-        // ---------------------------------------------------- PARA FILTRAR EN LA TABLA
+        loadLabels: async function () {
+          try {
+            const oModel = this.getView().getModel();
+            const envRes = await fetch("env.json");
+            const env = await envRes.json();
+            const url = env.API_LABELSCATALOGOS_URL_BASE + "getAllLabels";
+
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Error cargando labels");
+
+            const data = await res.json();
+            oModel.setData({ value: data.value });
+          } catch (error) {
+            MessageToast.show("Error al cargar labels: " + error.message);
+          }
+        },
 
         onFilterChange: function (oEvent) {
           var sQuery = oEvent.getSource().getValue();
@@ -68,10 +71,7 @@ sap.ui.define(
           });
         },
 
-        // ---------------------------------------------------- PARA AGREGAR UN NUEVO LABEL
-
         onAddCatalog: function () {
-          // Inicializa el modelo con estructura completa
           var oModel = new JSONModel({
             COMPANYID: "0",
             CEDIID: "0",
@@ -79,8 +79,8 @@ sap.ui.define(
             LABEL: "",
             INDEX: "",
             COLLECTION: "",
-            SECTION: "seguridad", // Valor por defecto
-            SEQUENCE: 10, // Valor por defecto
+            SECTION: "seguridad",
+            SEQUENCE: 10,
             IMAGE: "",
             DESCRIPTION: "",
             DETAIL_ROW: {
@@ -105,7 +105,6 @@ sap.ui.define(
 
           this.getView().setModel(oModel, "addCatalogModel");
 
-          // Cargar el diálogo si no existe
           if (!this._oAddDialog) {
             Fragment.load({
               id: this.getView().getId(),
@@ -114,7 +113,6 @@ sap.ui.define(
             }).then(
               function (oDialog) {
                 this._oAddDialog = oDialog;
-                // @ts-ignore
                 this.getView().addDependent(oDialog);
                 oDialog.open();
               }.bind(this)
@@ -124,17 +122,15 @@ sap.ui.define(
           }
         },
 
-        onSaveCatalog: function () {
+        onSaveCatalog: async function () {
           var oModel = this.getView().getModel("addCatalogModel");
           var oData = oModel.getData();
 
-          // Validación básica
           if (!oData.LABELID || !oData.LABEL) {
             MessageToast.show("LABELID y LABEL son campos requeridos");
             return;
           }
 
-          // Construir solo el objeto con las propiedades necesarias
           var labelPayload = {
             LABELID: oData.LABELID,
             LABEL: oData.LABEL,
@@ -150,28 +146,36 @@ sap.ui.define(
             label: labelPayload,
           };
 
-          $.ajax({
-            url: "http://localhost:4004/api/security/label/createLabel",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(payload),
-            success: function (response) {
-              MessageToast.show("Catálogo agregado correctamente");
-              this._oAddDialog.close();
+          try {
+            const envRes = await fetch("env.json");
+            const env = await envRes.json();
+            const url = env.API_LABELSCATALOGOS_URL_BASE + "createLabel";
 
-              // Agregar el nuevo registro al modelo de tabla
-              var oTableModel = this.getView().getModel();
-              var aData = oTableModel.getProperty("/value") || [];
-              aData.push(oData);
-              oTableModel.setProperty("/value", aData);
-            }.bind(this),
-            error: function (error) {
-              MessageToast.show("Error al guardar: " + error.responseText);
-            },
-          });
+            const res = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                // Se puede añadir Authorization si se usa token: "Authorization": "Bearer " + env.API_TOKEN,
+              },
+              body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+              const err = await res.text();
+              throw new Error(err || "Error al guardar label");
+            }
+
+            MessageToast.show("Catálogo agregado correctamente");
+            this._oAddDialog.close();
+
+            var oTableModel = this.getView().getModel();
+            var aData = oTableModel.getProperty("/value") || [];
+            aData.push(oData);
+            oTableModel.setProperty("/value", aData);
+          } catch (error) {
+            MessageToast.show("Error al guardar: " + error.message);
+          }
         },
-
-        
 
         onCancelAddCatalog: function () {
           if (this._oAddDialog) {
@@ -179,21 +183,15 @@ sap.ui.define(
           }
         },
 
-        // ---------------------------------------------------- FIN PARA AGREGAR UN NUEVO LABEL
-
-        // ---------------------------------------------------- PARA EDITAR UN LABEL
-
         onEditPressed: function () {
           if (!this._oSelectedItem) return;
 
           var oContext = this._oSelectedItem.getBindingContext();
           var oData = oContext.getObject();
 
-          // Crear modelo para edición
           var oEditModel = new JSONModel($.extend(true, {}, oData));
           this.getView().setModel(oEditModel, "editModel");
 
-          // Cargar diálogo de edición
           if (!this._oEditDialog) {
             Fragment.load({
               id: this.getView().getId(),
@@ -202,7 +200,6 @@ sap.ui.define(
             }).then(
               function (oDialog) {
                 this._oEditDialog = oDialog;
-                // @ts-ignore
                 this.getView().addDependent(oDialog);
                 oDialog.open();
               }.bind(this)
@@ -212,17 +209,15 @@ sap.ui.define(
           }
         },
 
-        onSaveEdit: function () {
+        onSaveEdit: async function () {
           var oEditModel = this.getView().getModel("editModel");
           var oEditedData = oEditModel.getData();
 
-          // Obtener el modelo de la tabla
           var oTableModel = this.getView().getModel();
           var aData = oTableModel.getProperty("/value") || [];
 
-          // Construir payload según espera el backend
           var payload = {
-            labelid: oEditedData.LABELID, // <-- en minúscula y sin _id
+            labelid: oEditedData.LABELID,
             label: {
               LABEL: oEditedData.LABEL,
               INDEX: oEditedData.INDEX,
@@ -234,32 +229,42 @@ sap.ui.define(
             },
           };
 
-          $.ajax({
-            url: "http://localhost:4004/api/security/label/updateLabel",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify(payload),
-            success: function (response) {
-              MessageToast.show("Registro actualizado correctamente");
-              this._oEditDialog.close();
+          try {
+            const envRes = await fetch("env.json");
+            const env = await envRes.json();
+            const url = env.API_LABELSCATALOGOS_URL_BASE + "updateLabel";
 
-              var updatedIndex = aData.findIndex(
-                (item) => item.LABELID === oEditedData.LABELID
-              );
+            const res = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
 
-              if (updatedIndex !== -1) {
-                aData[updatedIndex] = {
-                  ...aData[updatedIndex],
-                  ...payload.label,
-                  LABELID: oEditedData.LABELID,
-                };
-                oTableModel.setProperty("/value", aData);
-              }
-            }.bind(this),
-            error: function (error) {
-              MessageToast.show("Error al actualizar: " + error.responseText);
-            }.bind(this),
-          });
+            if (!res.ok) {
+              const err = await res.text();
+              throw new Error(err || "Error al actualizar label");
+            }
+
+            MessageToast.show("Registro actualizado correctamente");
+            this._oEditDialog.close();
+
+            var updatedIndex = aData.findIndex(
+              (item) => item.LABELID === oEditedData.LABELID
+            );
+
+            if (updatedIndex !== -1) {
+              aData[updatedIndex] = {
+                ...aData[updatedIndex],
+                ...payload.label,
+                LABELID: oEditedData.LABELID,
+              };
+              oTableModel.setProperty("/value", aData);
+            }
+          } catch (error) {
+            MessageToast.show("Error al actualizar: " + error.message);
+          }
         },
 
         onCancelEdit: function () {
@@ -267,10 +272,6 @@ sap.ui.define(
             this._oEditDialog.close();
           }
         },
-
-        // ---------------------------------------------------- FIN PARA EDITAR UN LABEL
-
-        // ---------------------------------------------------- PARA ELIMINAR UN LABEL
 
         onDeletePressed: function () {
           if (!this._oSelectedItem) return;
@@ -280,41 +281,45 @@ sap.ui.define(
 
           MessageBox.confirm("¿Está seguro de eliminar este registro?", {
             actions: [MessageBox.Action.YES, MessageBox.Action.NO],
-            onClose: function (sAction) {
+            onClose: async function (sAction) {
               if (sAction === MessageBox.Action.YES) {
-                $.ajax({
-                  url: "http://localhost:4004/api/security/label/deleteLabel",
-                  method: "POST",
-                  contentType: "application/json",
-                  data: JSON.stringify({ labelid: oData.LABELID }),
-                  success: function () {
-                    MessageToast.show("Registro eliminado");
+                try {
+                  const envRes = await fetch("env.json");
+                  const env = await envRes.json();
+                  const url = env.API_LABELSCATALOGOS_URL_BASE + "deleteLabel";
 
-                    var oTableModel = this.getView().getModel();
-                    var aData = oTableModel.getProperty("/value") || [];
+                  const res = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ labelid: oData.LABELID }),
+                  });
 
-                    var index = aData.findIndex(
-                      (item) => item.LABELID === oData.LABELID
-                    );
-                    if (index !== -1) {
-                      aData.splice(index, 1);
-                      oTableModel.setProperty("/value", aData);
-                    }
-                  }.bind(this),
-                  error: function (error) {
-                    MessageToast.show(
-                      "Error al eliminar: " + error.responseText
-                    );
-                  }.bind(this),
-                });
+                  if (!res.ok) {
+                    const err = await res.text();
+                    throw new Error(err || "Error al eliminar label");
+                  }
+
+                  MessageToast.show("Registro eliminado");
+
+                  var oTableModel = this.getView().getModel();
+                  var aData = oTableModel.getProperty("/value") || [];
+
+                  var index = aData.findIndex(
+                    (item) => item.LABELID === oData.LABELID
+                  );
+                  if (index !== -1) {
+                    aData.splice(index, 1);
+                    oTableModel.setProperty("/value", aData);
+                  }
+                } catch (error) {
+                  MessageToast.show("Error al eliminar: " + error.message);
+                }
               }
             }.bind(this),
           });
         },
-
-        // ---------------------------------------------------- FIN PARA ELIMINAR UN LABEL
-
-        // ---------------------------------------------------- ELIMINADO/ACTIVADO LOGICO
 
         onActivatePressed: function () {
           this._changeStatus(true);
@@ -324,7 +329,7 @@ sap.ui.define(
           this._changeStatus(false);
         },
 
-        _changeStatus: function (bActivate) {
+        _changeStatus: async function (bActivate) {
           if (!this._oSelectedItem) {
             console.log("No hay ítem seleccionado");
             return;
@@ -338,81 +343,79 @@ sap.ui.define(
           var oTableModel = this.getView().getModel();
           var aData = oTableModel.getProperty("/value") || [];
 
-          // Selecciona la URL según la acción (notar mayúscula en ActivateLabel)
-          var url = bActivate
-            ? "http://localhost:4004/api/security/label/ActivateLabel"
-            : "http://localhost:4004/api/security/label/deactivateLabel";
+          try {
+            const envRes = await fetch("env.json");
+            const env = await envRes.json();
 
-          $.ajax({
-            url: url,
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({
-              labelid: oData.LABELID,
-            }),
-            success: function () {
-              var index = aData.findIndex(
-                (item) => item.LABELID === oData.LABELID
-              );
-              if (index !== -1) {
-                aData[index].DETAIL_ROW.ACTIVED = bActivate;
-                oTableModel.setProperty("/value", aData);
-              }
+            var url = bActivate
+              ? env.API_LABELSCATALOGOS_URL_BASE + "ActivateLabel"
+              : env.API_LABELSCATALOGOS_URL_BASE + "deactivateLabel";
 
-              this.byId("activateButton").setVisible(!bActivate);
-              this.byId("activateButton").setEnabled(!bActivate);
-              this.byId("deactivateButton").setVisible(bActivate);
-              this.byId("deactivateButton").setEnabled(bActivate);
+            const res = await fetch(url, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                labelid: oData.LABELID,
+              }),
+            });
 
-              MessageToast.show(
-                "Registro " + oData.LABELID + ": " + sStatusMessage
-              );
-            }.bind(this),
-            error: function (error) {
-              MessageToast.show("Error: " + error.responseText);
-            }.bind(this),
-          });
+            if (!res.ok) {
+              const err = await res.text();
+              throw new Error(err || "Error en cambio de estado");
+            }
+
+            var index = aData.findIndex(
+              (item) => item.LABELID === oData.LABELID
+            );
+            if (index !== -1) {
+              aData[index].DETAIL_ROW.ACTIVED = bActivate;
+              oTableModel.setProperty("/value", aData);
+            }
+
+            this.byId("activateButton").setVisible(!bActivate);
+            this.byId("activateButton").setEnabled(!bActivate);
+            this.byId("deactivateButton").setVisible(bActivate);
+            this.byId("deactivateButton").setEnabled(bActivate);
+
+            MessageToast.show(
+              "Registro " + oData.LABELID + ": " + sStatusMessage
+            );
+          } catch (error) {
+            MessageToast.show("Error: " + error.message);
+          }
         },
 
-        // ---------------------------------------------------- FIN ELIMINADO/ACTIVADO LOGICO
-
-        // Evento cuando cambia la selección en la tabla
         onSelectionChange: function (oEvent) {
           var oTable = oEvent.getSource();
           var oSelectedItem = oTable.getSelectedItem();
 
           this._oSelectedItem = oSelectedItem;
 
-          // Obtener contexto y datos del item seleccionado
-          var oContext = oSelectedItem
-            ? oSelectedItem.getBindingContext()
-            : null;
+          var oContext = oSelectedItem ? oSelectedItem.getBindingContext() : null;
           var oData = oContext ? oContext.getObject() : null;
 
-          // Referencias a los botones
           var oEditButton = this.byId("editButton");
           var oActivateButton = this.byId("activateButton");
           var oDeactivateButton = this.byId("deactivateButton");
           var oDeleteButton = this.byId("deleteButton");
 
           if (oData) {
-            // Habilitar los botones generales
             oEditButton.setEnabled(true);
             oDeleteButton.setEnabled(true);
 
             var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
 
-            // Mostrar y habilitar solo el botón correspondiente
             oActivateButton.setVisible(!bActive);
             oActivateButton.setEnabled(!bActive);
 
             oDeactivateButton.setVisible(bActive);
             oDeactivateButton.setEnabled(bActive);
           } else {
-            // Sin selección, deshabilitar todo
             oEditButton.setEnabled(false);
             oActivateButton.setEnabled(false);
-            oActivateButton.setVisible(true); // Para que no desaparezca
+            oActivateButton.setVisible(true);
             oDeactivateButton.setEnabled(false);
             oDeactivateButton.setVisible(false);
             oDeleteButton.setEnabled(false);
@@ -420,18 +423,7 @@ sap.ui.define(
         },
 
         _refreshCatalogTable: function () {
-          // Implementa la lógica para refrescar los datos de la tabla
-          // @ts-ignore
-          var oTable = this.byId("catalogTable");
-          var oModel = this.getView().getModel();
-
-          $.ajax({
-            url: "http://localhost:4004/api/security/label/getAllLabels",
-            method: "GET",
-            success: function (data) {
-              oModel.setData({ value: data.value });
-            },
-          });
+          this.loadLabels();
         },
       }
     );
