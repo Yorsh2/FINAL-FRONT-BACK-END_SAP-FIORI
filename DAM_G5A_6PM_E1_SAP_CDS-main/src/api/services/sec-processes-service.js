@@ -20,19 +20,21 @@ async function GetAllLabels(req) {
 
 // Obtener una etiqueta por ID
 async function GetLabelById(req) {
-    try {
-        const labelid = req.req.params.labelid || req.req.query.labelid;
-        const label = await ZTLabels.findOne({
-            LABELID: labelid,
-            'DETAIL_ROW.DELETED': false
-        }).lean();
+  try {
+    const labelid = req.data?.labelid || req.req.query.labelid;
 
-        if (!label) throw new Error('Etiqueta no encontrada');
-        return label;
-    } catch (error) {
-        throw new Error(`Error al buscar etiqueta: ${error.message}`);
-    }
+    const label = await ZTLabels.findOne({
+      LABELID: labelid,
+      'DETAIL_ROW.DELETED': false
+    }).lean();
+
+    if (!label) throw new Error('Etiqueta no encontrada');
+    return label;
+  } catch (error) {
+    throw new Error(`Error al buscar etiqueta: ${error.message}`);
+  }
 }
+
 
 // Crear una nueva etiqueta
 async function createLabel(req) {
@@ -124,6 +126,39 @@ async function DeactivateLabel(req) {
   }
 }
 
+async function ActivateLabel(req) {
+  try {
+    const labelid = req.data.labelid || req.req.params.labelid || req.req.query.labelid;
+    const reguser = req.req.body?.REGUSER || 'system';
+
+    const auditEntry = {
+      CURRENT: true,
+      REGDATE: new Date(),
+      REGTIME: new Date(),
+      REGUSER: reguser
+    };
+
+    const updatedLabel = await ZTLabels.findOneAndUpdate(
+      { LABELID: labelid },
+      {
+        $set: { 'DETAIL_ROW.ACTIVED': true },
+        $push: { 'DETAIL_ROW.DETAIL_ROW_REG': auditEntry }
+      },
+      { new: true }
+    ).lean();
+
+    if (!updatedLabel) {
+      throw new Error('Etiqueta no encontrada');
+    }
+
+    return updatedLabel;
+  } catch (error) {
+    throw new Error(`Error al activar etiqueta: ${error.message}`);
+  }
+}
+
+
+
 // Eliminar una etiqueta (eliminación permanente)
 async function deleteLabel(req) {
     try {
@@ -147,5 +182,6 @@ module.exports = {
     createLabel,
     UpdateLabel,
     DeactivateLabel,
-    deleteLabel
+    deleteLabel,
+    ActivateLabel
 };

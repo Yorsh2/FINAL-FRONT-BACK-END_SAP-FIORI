@@ -33,6 +33,10 @@ service LabelsRoute @(path:'/api/security/label') {
     action deactivateLabel(labelid: String)
     returns labels;
 
+    @Core.Description: 'Activar etiqueta (borrado lógico)'
+    @path: 'ActivateLabel'
+    action ActivateLabel(labelid: String)
+    returns labels;
 
     @Core.Description: 'Eliminar etiqueta (borrado físico)'
     @path: 'deleteLabel'

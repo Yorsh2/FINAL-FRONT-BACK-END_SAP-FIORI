@@ -6,7 +6,8 @@ const {
     createLabel,
     UpdateLabel,
     DeactivateLabel,
-    deleteLabel
+    deleteLabel,
+    ActivateLabel
 } = require('../services/sec-processes-service');
 
 class LabelsController extends cds.ApplicationService {
@@ -56,6 +57,14 @@ class LabelsController extends cds.ApplicationService {
         this.on('deleteLabel', async (req) => {
             try {
                 return await deleteLabel(req);
+            } catch (error) {
+                req.error(error.message.includes('no encontrada') ? 404 : 500, error.message);
+            }
+        });
+
+        this.on('ActivateLabel', async (req) => {
+            try {
+                return await ActivateLabel(req);
             } catch (error) {
                 req.error(error.message.includes('no encontrada') ? 404 : 500, error.message);
             }

@@ -24,7 +24,7 @@ sap.ui.define(
           this._oDialog = null;
 
           $.ajax({
-            url: "http://localhost:4004/api/sec/getall",
+            url: "http://localhost:4004/api/security/label/getAllLabels",
             method: "GET",
             success: function (data) {
               oModel.setData({ value: data.value });
@@ -128,48 +128,41 @@ sap.ui.define(
           var oModel = this.getView().getModel("addCatalogModel");
           var oData = oModel.getData();
 
-          // Obtener el modelo de la tabla
-          var oTableModel = this.getView().getModel();
-          var aData = oTableModel.getProperty("/value") || [];
-
           // Validación básica
           if (!oData.LABELID || !oData.LABEL) {
             MessageToast.show("LABELID y LABEL son campos requeridos");
             return;
           }
 
-          // Verificar si el LABELID ya existe
-          var bLabelIdExists = aData.some(function (item) {
-            return item.LABELID === oData.LABELID;
-          });
-
-          if (bLabelIdExists) {
-            MessageToast.show(
-              "El LABELID ya existe, por favor ingrese uno diferente"
-            );
-            return;
-          }
-
-          // Preparar datos para enviar
-          var payload = {
-            values: oData,
+          // Construir solo el objeto con las propiedades necesarias
+          var labelPayload = {
+            LABELID: oData.LABELID,
+            LABEL: oData.LABEL,
+            INDEX: oData.INDEX,
+            COLLECTION: oData.COLLECTION,
+            SECTION: oData.SECTION,
+            SEQUENCE: oData.SEQUENCE,
+            IMAGE: oData.IMAGE,
+            DESCRIPTION: oData.DESCRIPTION,
           };
 
-          console.log("Data:", JSON.stringify(oData));
+          var payload = {
+            label: labelPayload,
+          };
 
           $.ajax({
-            url: "http://localhost:4004/api/sec/newLabel", // Ajusta tu endpoint
+            url: "http://localhost:4004/api/security/label/createLabel",
             method: "POST",
             contentType: "application/json",
             data: JSON.stringify(payload),
-            // @ts-ignore
             success: function (response) {
               MessageToast.show("Catálogo agregado correctamente");
               this._oAddDialog.close();
 
-              // Agregar el nuevo registro
+              // Agregar el nuevo registro al modelo de tabla
+              var oTableModel = this.getView().getModel();
+              var aData = oTableModel.getProperty("/value") || [];
               aData.push(oData);
-              // Actualizar el modelo
               oTableModel.setProperty("/value", aData);
             }.bind(this),
             error: function (error) {
@@ -177,6 +170,8 @@ sap.ui.define(
             },
           });
         },
+
+        
 
         onCancelAddCatalog: function () {
           if (this._oAddDialog) {
@@ -225,37 +220,40 @@ sap.ui.define(
           var oTableModel = this.getView().getModel();
           var aData = oTableModel.getProperty("/value") || [];
 
-          // Llamada a la API para actualizar
+          // Construir payload según espera el backend
+          var payload = {
+            labelid: oEditedData.LABELID, // <-- en minúscula y sin _id
+            label: {
+              LABEL: oEditedData.LABEL,
+              INDEX: oEditedData.INDEX,
+              COLLECTION: oEditedData.COLLECTION,
+              SEQUENCE: oEditedData.SEQUENCE,
+              IMAGE: oEditedData.IMAGE,
+              DESCRIPTION: oEditedData.DESCRIPTION,
+              SECTION: oEditedData.SECTION,
+            },
+          };
+
           $.ajax({
-            url: "http://localhost:4004/api/sec/updateLabel",
+            url: "http://localhost:4004/api/security/label/updateLabel",
             method: "POST",
             contentType: "application/json",
-            data: JSON.stringify({
-              values: oEditedData,
-            }),
-            // @ts-ignore
+            data: JSON.stringify(payload),
             success: function (response) {
               MessageToast.show("Registro actualizado correctamente");
               this._oEditDialog.close();
 
               var updatedIndex = aData.findIndex(
-                (item) => item._id === oEditedData._id
+                (item) => item.LABELID === oEditedData.LABELID
               );
 
               if (updatedIndex !== -1) {
                 aData[updatedIndex] = {
                   ...aData[updatedIndex],
+                  ...payload.label,
                   LABELID: oEditedData.LABELID,
-                  VALUEPAID: oEditedData.VALUEPAID,
-                  LABEL: oEditedData.LABEL,
-                  INDEX: oEditedData.INDEX,
-                  COLLECTION: oEditedData.COLLECTION,
-                  SECTION: oEditedData.SECTION,
-                  SEQUENCE: oEditedData.SEQUENCE,
-                  IMAGE: oEditedData.IMAGE,
-                  DESCRIPTION: oEditedData.DESCRIPTION,
                 };
-                oTableModel.setProperty("/values", aData);
+                oTableModel.setProperty("/value", aData);
               }
             }.bind(this),
             error: function (error) {
@@ -285,20 +283,18 @@ sap.ui.define(
             onClose: function (sAction) {
               if (sAction === MessageBox.Action.YES) {
                 $.ajax({
-                  url: "http://localhost:4004/api/sec/deleteLabel",
+                  url: "http://localhost:4004/api/security/label/deleteLabel",
                   method: "POST",
                   contentType: "application/json",
-                  data: JSON.stringify({ _id: oData._id }),
+                  data: JSON.stringify({ labelid: oData.LABELID }),
                   success: function () {
                     MessageToast.show("Registro eliminado");
 
-                    // Actualización local del modelo
                     var oTableModel = this.getView().getModel();
                     var aData = oTableModel.getProperty("/value") || [];
 
-                    // Encontrar y eliminar el registro
                     var index = aData.findIndex(
-                      (item) => item._id === oData._id
+                      (item) => item.LABELID === oData.LABELID
                     );
                     if (index !== -1) {
                       aData.splice(index, 1);
@@ -329,8 +325,6 @@ sap.ui.define(
         },
 
         _changeStatus: function (bActivate) {
-          console.log("Activar/Desactivar");
-
           if (!this._oSelectedItem) {
             console.log("No hay ítem seleccionado");
             return;
@@ -338,35 +332,33 @@ sap.ui.define(
 
           var oContext = this._oSelectedItem.getBindingContext();
           var oData = oContext.getObject();
-          var sAction = bActivate ? "activate" : "delete";
+
           var sStatusMessage = bActivate ? "activado" : "desactivado";
 
-          // Obtener el modelo y los datos actuales
           var oTableModel = this.getView().getModel();
           var aData = oTableModel.getProperty("/value") || [];
 
+          // Selecciona la URL según la acción (notar mayúscula en ActivateLabel)
+          var url = bActivate
+            ? "http://localhost:4004/api/security/label/ActivateLabel"
+            : "http://localhost:4004/api/security/label/deactivateLabel";
+
           $.ajax({
-            url:
-              "http://localhost:4004/api/sec/logicalLabel?status=" +
-              sAction +
-              "&&labelID=" +
-              oData.LABELID,
+            url: url,
             method: "POST",
             contentType: "application/json",
+            data: JSON.stringify({
+              labelid: oData.LABELID,
+            }),
             success: function () {
-              // Actualizar el estado localmente
               var index = aData.findIndex(
                 (item) => item.LABELID === oData.LABELID
               );
               if (index !== -1) {
-                // Actualizar solo el campo ACTIVED
                 aData[index].DETAIL_ROW.ACTIVED = bActivate;
-
-                // Actualizar el modelo
                 oTableModel.setProperty("/value", aData);
               }
 
-              // Actualizar visibilidad de botones según estado
               this.byId("activateButton").setVisible(!bActivate);
               this.byId("activateButton").setEnabled(!bActivate);
               this.byId("deactivateButton").setVisible(bActivate);
@@ -384,6 +376,49 @@ sap.ui.define(
 
         // ---------------------------------------------------- FIN ELIMINADO/ACTIVADO LOGICO
 
+        // Evento cuando cambia la selección en la tabla
+        onSelectionChange: function (oEvent) {
+          var oTable = oEvent.getSource();
+          var oSelectedItem = oTable.getSelectedItem();
+
+          this._oSelectedItem = oSelectedItem;
+
+          // Obtener contexto y datos del item seleccionado
+          var oContext = oSelectedItem
+            ? oSelectedItem.getBindingContext()
+            : null;
+          var oData = oContext ? oContext.getObject() : null;
+
+          // Referencias a los botones
+          var oEditButton = this.byId("editButton");
+          var oActivateButton = this.byId("activateButton");
+          var oDeactivateButton = this.byId("deactivateButton");
+          var oDeleteButton = this.byId("deleteButton");
+
+          if (oData) {
+            // Habilitar los botones generales
+            oEditButton.setEnabled(true);
+            oDeleteButton.setEnabled(true);
+
+            var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
+
+            // Mostrar y habilitar solo el botón correspondiente
+            oActivateButton.setVisible(!bActive);
+            oActivateButton.setEnabled(!bActive);
+
+            oDeactivateButton.setVisible(bActive);
+            oDeactivateButton.setEnabled(bActive);
+          } else {
+            // Sin selección, deshabilitar todo
+            oEditButton.setEnabled(false);
+            oActivateButton.setEnabled(false);
+            oActivateButton.setVisible(true); // Para que no desaparezca
+            oDeactivateButton.setEnabled(false);
+            oDeactivateButton.setVisible(false);
+            oDeleteButton.setEnabled(false);
+          }
+        },
+
         _refreshCatalogTable: function () {
           // Implementa la lógica para refrescar los datos de la tabla
           // @ts-ignore
@@ -391,156 +426,13 @@ sap.ui.define(
           var oModel = this.getView().getModel();
 
           $.ajax({
-            url: "http://localhost:4004/api/sec/getall",
+            url: "http://localhost:4004/api/security/label/getAllLabels",
             method: "GET",
             success: function (data) {
               oModel.setData({ value: data.value });
             },
           });
         },
-
-        // ---------------------------------------------------- PARA CARGAR VALORES EN EL PANEL DERECHO
-
-        onItemPress: function (oEvent) {
-          var oItem = oEvent.getParameter("listItem");
-          var oContext = oItem.getBindingContext();
-          var oSelectedData = oContext.getObject(); // Obtiene los datos del ítem seleccionado
-
-          var sLabelID = oSelectedData.LABELID;
-          var sUrl =
-            "http://localhost:4004/api/sec/valuesCRUD?procedure=get&labelID=" +
-            encodeURIComponent(sLabelID);
-          var that = this;
-
-          $.ajax({
-            url: sUrl,
-            method: "GET",
-            dataType: "json",
-            success: function (response) {
-              var oValuesView = that.byId("XMLViewValues");
-              if (oValuesView) {
-                oValuesView.loaded().then(function () {
-                  var oController = oValuesView.getController();
-                  if (oController && oController.loadValues) {
-                    // Pasa los valores y también el ítem seleccionado
-                    oController.loadValues(response.value || []);
-
-                    // Actualiza el selectedValue en el modelo values
-                    oValuesView
-                      .getModel("values")
-                      .setProperty("/selectedValue", oSelectedData);
-                  }
-                });
-              }
-            },
-            error: function () {
-              MessageToast.show("Error al cargar valores");
-            },
-          });
-
-          // Expandir el panel derecho
-          var oSplitter = this.byId("mainSplitter");
-          var oDetailPanel = this.byId("detailPanel");
-          var oLayoutData = oDetailPanel.getLayoutData();
-          if (oLayoutData) {
-            oLayoutData.setSize("50%"); // O el porcentaje/píxeles que prefieras
-          }
-
-          // Opcional: reducir el panel izquierdo
-          var oLeftPanel = oSplitter.getContentAreas()[0];
-          var oLeftLayoutData = oLeftPanel.getLayoutData();
-          if (oLeftLayoutData) {
-            oLeftLayoutData.setSize("50%");
-          }
-        },
-
-        // ---------------------------------------------------- FIN PARA CARGAR VALORES EN EL PANEL DERECHO
-
-        // ---------------------------------------------------- PARA BOTONES DE ACCIONES LOGICAS
-
-        // @ts-ignore
-        onSelectionChange: function (oEvent) {
-          // Obtener el item seleccionado
-          var oTable = this.byId("catalogTable");
-          var oSelectedItem = oTable.getSelectedItem();
-
-          if (!oSelectedItem) {
-            this._disableAllActions();
-            return;
-          }
-
-          // Habilitar todos los botones de acción
-          this.byId("editButton").setEnabled(true);
-          this.byId("deleteButton").setEnabled(true);
-
-          // Determinar estado para activar/desactivar
-          var oContext = oSelectedItem.getBindingContext();
-          var oData = oContext.getObject();
-
-          // Actualizar visibilidad de botones según estado
-          this.byId("activateButton").setVisible(!oData.DETAIL_ROW.ACTIVED);
-          this.byId("activateButton").setEnabled(!oData.DETAIL_ROW.ACTIVED);
-          this.byId("deactivateButton").setVisible(oData.DETAIL_ROW.ACTIVED);
-          this.byId("deactivateButton").setEnabled(oData.DETAIL_ROW.ACTIVED);
-
-          // Guardar referencia al item seleccionado
-          this._oSelectedItem = oSelectedItem;
-        },
-
-        _disableAllActions: function () {
-          this.byId("editButton").setEnabled(false);
-          this.byId("activateButton").setEnabled(false);
-          this.byId("deactivateButton").setEnabled(false);
-          this.byId("deleteButton").setEnabled(false);
-        },
-
-        // ---------------------------------------------------- FIN PARA BOTONES DE ACCIONES LOGICAS
-
-        // ------------------------------------------------ BOTONES DE ACCIÓN
-
-        onCloseDetailPanel: function () {
-          var oSplitter = this.byId("mainSplitter");
-          var oDetailPanel = this.byId("detailPanel");
-          var oLayoutData = oDetailPanel.getLayoutData();
-          if (oLayoutData) {
-            oLayoutData.setSize("0px");
-          }
-          var oLeftPanel = oSplitter.getContentAreas()[0];
-          var oLeftLayoutData = oLeftPanel.getLayoutData();
-          if (oLeftLayoutData) {
-            oLeftLayoutData.setSize("100%");
-          }
-        },
-
-        onCenterDetailPanel: function () {
-          var oSplitter = this.byId("mainSplitter");
-          var oDetailPanel = this.byId("detailPanel");
-          var oLayoutData = oDetailPanel.getLayoutData();
-          if (oLayoutData) {
-            oLayoutData.setSize("50%");
-          }
-          var oLeftPanel = oSplitter.getContentAreas()[0];
-          var oLeftLayoutData = oLeftPanel.getLayoutData();
-          if (oLeftLayoutData) {
-            oLeftLayoutData.setSize("50%");
-          }
-        },
-
-        onExpandDetailPanel: function () {
-          var oSplitter = this.byId("mainSplitter");
-          var oDetailPanel = this.byId("detailPanel");
-          var oLayoutData = oDetailPanel.getLayoutData();
-          if (oLayoutData) {
-            oLayoutData.setSize("100%");
-          }
-          var oLeftPanel = oSplitter.getContentAreas()[0];
-          var oLeftLayoutData = oLeftPanel.getLayoutData();
-          if (oLeftLayoutData) {
-            oLeftLayoutData.setSize("0px");
-          }
-        },
-
-        // ------------------------------------------------ FIN BOTONES DE ACCIÓN
       }
     );
   }
