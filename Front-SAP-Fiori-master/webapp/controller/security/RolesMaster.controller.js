@@ -27,12 +27,12 @@ sap.ui.define([
     },
 
     onAfterRendering: function () {
-    const oTable = this.byId("rolesTable");
-    const oDomRef = oTable.getDomRef();
+      const oTable = this.byId("rolesTable");
+      const oDomRef = oTable.getDomRef();
 
-    if (oDomRef) {
-      oDomRef.addEventListener("dblclick", this.onRowDoubleClick.bind(this));
-    }
+      if (oDomRef) {
+        oDomRef.addEventListener("dblclick", this.onRowDoubleClick.bind(this));
+      }
     },
     //FUNCION SELECCION DOBLE CLICK
     onRowDoubleClick: function (oEvent) {
@@ -51,12 +51,12 @@ sap.ui.define([
       });
     },
 
-      onDialogClose: function () {
+    onDialogClose: function () {
       if (this._pDialog) this._pDialog.close();
       if (this._pEditDialog) this._pEditDialog.close();
     },
-        //cargamos los roles A LA TABLA
-          loadRoles: function () {
+    //cargamos los roles A LA TABLA
+    loadRoles: function () {
       const oView = this.getView();
       const oModel = new JSONModel();
 
@@ -75,13 +75,13 @@ sap.ui.define([
         });
     },
 
-      onRefresh: function () {
-    this.loadRoles();
+    onRefresh: function () {
+      this.loadRoles();
     },
 
 
-      //quitar privilegios
-      onRemovePrivilege: function (oEvent) {
+    //quitar privilegios
+    onRemovePrivilege: function (oEvent) {
       const oSource = oEvent.getSource();
 
       // Detecta el contexto y el nombre del modelo (newRoleModel o editRole)
@@ -111,97 +111,97 @@ sap.ui.define([
         oModel.refresh(true);                      // Refresca la vista
       }
     },
-    
-     
-      //funcion boton save guardar en el boton edit 
-      onSaveRoleEdit: async function () {
-  const oModel = this.getView().getModel("editRole");
-  const data = oModel.getData();
 
-  if (!data.ROLEID || !data.ROLENAME || !data.DESCRIPTION || !Array.isArray(data.PRIVILEGES) || data.PRIVILEGES.length === 0) {
-    MessageBox.warning("Completa todos los campos y asigna al menos un privilegio.");
-    return;
-  }
 
-  const now = new Date();
+    //funcion boton save guardar en el boton edit 
+    onSaveRoleEdit: async function () {
+      const oModel = this.getView().getModel("editRole");
+      const data = oModel.getData();
 
- const payload = {
-    roles: {
-      ROLEID: data.ROLEID,
-      ROLENAME: data.ROLENAME,
-      DESCRIPTION: data.DESCRIPTION,
-      PRIVILEGES: data.PRIVILEGES.map(p => ({
-        PROCESSID: p.PROCESSID,
-        PRIVILEGEID: p.PRIVILEGEID
-      }))
-    }
-  };
+      if (!data.ROLEID || !data.ROLENAME || !data.DESCRIPTION || !Array.isArray(data.PRIVILEGES) || data.PRIVILEGES.length === 0) {
+        MessageBox.warning("Completa todos los campos y asigna al menos un privilegio.");
+        return;
+      }
 
-  try {
-    const res = await fetch("http://localhost:3333/api/security/rol/updateItem", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+      const now = new Date();
 
-    const result = await res.json();
+      const payload = {
+        roles: {
+          ROLEID: data.ROLEID,
+          ROLENAME: data.ROLENAME,
+          DESCRIPTION: data.DESCRIPTION,
+          PRIVILEGES: data.PRIVILEGES.map(p => ({
+            PROCESSID: p.PROCESSID,
+            PRIVILEGEID: p.PRIVILEGEID
+          }))
+        }
+      };
 
-    if (res.ok) {
-      MessageToast.show("Rol actualizado correctamente");
-      this._pEditDialog.close();
-      this.loadRoles();
-    } else {
-      MessageBox.error("Error: " + (result.message || "Error desconocido"));
-    }
-  } catch (e) {
-    console.error("Error en la actualización:", e);
-    MessageBox.error("No se pudo conectar con el servidor");
-  }
-},
+      try {
+        const res = await fetch("http://localhost:3333/api/security/rol/updateItem", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await res.json();
+
+        if (res.ok) {
+          MessageToast.show("Rol actualizado correctamente");
+          this._pEditDialog.close();
+          this.loadRoles();
+        } else {
+          MessageBox.error("Error: " + (result.message || "Error desconocido"));
+        }
+      } catch (e) {
+        console.error("Error en la actualización:", e);
+        MessageBox.error("No se pudo conectar con el servidor");
+      }
+    },
 
 
 
     //agregar privilegios
     onAddPrivilege: function () {
-    const oView = this.getView();
+      const oView = this.getView();
 
-    // Detectar si estás en modo crear o editar
-    const oModel = oView.getModel("editRole") || oView.getModel("newRoleModel");
-    const oData = oModel.getData();
+      // Detectar si estás en modo crear o editar
+      const oModel = oView.getModel("editRole") || oView.getModel("newRoleModel");
+      const oData = oModel.getData();
 
-    const sProcess = oData.NEW_PROCESSID;
-    const aPrivileges = oData.NEW_PRIVILEGES;
+      const sProcess = oData.NEW_PROCESSID;
+      const aPrivileges = oData.NEW_PRIVILEGES;
 
-    if (!sProcess || !aPrivileges || aPrivileges.length === 0) {
-      MessageToast.show("Selecciona un proceso y al menos un privilegio.");
-      return;
-    }
+      if (!sProcess || !aPrivileges || aPrivileges.length === 0) {
+        MessageToast.show("Selecciona un proceso y al menos un privilegio.");
+        return;
+      }
 
-    // Validar duplicado por proceso
-    const bExiste = oData.PRIVILEGES.some(p => p.PROCESSID === sProcess);
-    if (bExiste) {
-      MessageToast.show("Ya agregaste privilegios para este proceso.");
-      return;
-    }
+      // Validar duplicado por proceso
+      const bExiste = oData.PRIVILEGES.some(p => p.PROCESSID === sProcess);
+      if (bExiste) {
+        MessageToast.show("Ya agregaste privilegios para este proceso.");
+        return;
+      }
 
-    // Asignar correctamente los privilegios con el proceso
-    const aNuevos = aPrivileges.map(privId => ({
-      PROCESSID: sProcess,
-      PRIVILEGEID: privId
-    }));
+      // Asignar correctamente los privilegios con el proceso
+      const aNuevos = aPrivileges.map(privId => ({
+        PROCESSID: sProcess,
+        PRIVILEGEID: privId
+      }));
 
-    oData.PRIVILEGES = oData.PRIVILEGES.concat(aNuevos);
-    oData.NEW_PROCESSID = "";
-    oData.NEW_PRIVILEGES = [];
+      oData.PRIVILEGES = oData.PRIVILEGES.concat(aNuevos);
+      oData.NEW_PROCESSID = "";
+      oData.NEW_PRIVILEGES = [];
 
-    oModel.setData(oData);
-  },
+      oModel.setData(oData);
+    },
 
-  onGoToPrivileges: function () {
-  MessageToast.show("Funcionalidad aún no implementada.");
-  },
+    onGoToPrivileges: function () {
+      MessageToast.show("Funcionalidad aún no implementada.");
+    },
 
-        formatPrivileges: function (privs) {
+    formatPrivileges: function (privs) {
       if (!Array.isArray(privs)) return "";
       return privs.map(p => {
         const pid = p.PROCESSID || "SinProceso";
@@ -212,13 +212,13 @@ sap.ui.define([
       }).join("\n");
     },
 
-    formatRegDate: function(detailRow) {
-    return detailRow?.DETAIL_ROW_REG?.[0]?.REGDATE || "-";
+    formatRegDate: function (detailRow) {
+      return detailRow?.DETAIL_ROW_REG?.[0]?.REGDATE || "-";
     },
-    formatRegTime: function(detailRow) {
+    formatRegTime: function (detailRow) {
       return detailRow?.DETAIL_ROW_REG?.[0]?.REGTIME || "-";
     },
-    formatRegUser: function(detailRow) {
+    formatRegUser: function (detailRow) {
       return detailRow?.DETAIL_ROW_REG?.[0]?.REGUSER || "-";
     },
 
@@ -271,25 +271,25 @@ sap.ui.define([
 
     //CARGAGAR VENTANA DE AGREGAR ROL
     onOpenDialog: async function () {
-    // 1. Cargar fragmento si no existe
-    if (!this._pDialog) {
-      this._pDialog = await Fragment.load({
-        name: "com.invertions.sapfiorimodinv.view.security.fragments.AddRoleDialog",
-        controller: this
-      });
-      this.getView().addDependent(this._pDialog);
-    }
+      // 1. Cargar fragmento si no existe
+      if (!this._pDialog) {
+        this._pDialog = await Fragment.load({
+          name: "com.invertions.sapfiorimodinv.view.security.fragments.AddRoleDialog",
+          controller: this
+        });
+        this.getView().addDependent(this._pDialog);
+      }
 
-    // 2. Inicializar modelo vacío para el nuevo rol
-    this.getView().setModel(new JSONModel({
-      ROLEID: "",
-      ROLENAME: "",
-      DESCRIPTION: "",
-      ACTIVO: true, 
-      NEW_PROCESSID: "",
-      NEW_PRIVILEGES: [],
-      PRIVILEGES: []
-    }), "newRoleModel");
+      // 2. Inicializar modelo vacío para el nuevo rol
+      this.getView().setModel(new JSONModel({
+        ROLEID: "",
+        ROLENAME: "",
+        DESCRIPTION: "",
+        ACTIVO: true,
+        NEW_PROCESSID: "",
+        NEW_PRIVILEGES: [],
+        PRIVILEGES: []
+      }), "newRoleModel");
 
     // 3. Cargar procesos
     fetch("http://localhost:3333/api/security/process/getAllProcesses")
@@ -303,22 +303,22 @@ sap.ui.define([
       this.getView().setModel(oProcessModel, "processCatalogModel");
     });
 
-    // 4. Cargar privilegios
-    fetch("http://localhost:3333/api/security/values/getAllValues")
-    .then(res => res.json())
-    .then(data => {
-      const privilegeItems = data.value.filter(v => v.LABELID === "IdPrivileges");
-      const oPrivilegeModel = new JSONModel({ values: privilegeItems });
-      this.getView().setModel(oPrivilegeModel, "privilegeCatalogModel");
-    });
+      // 4. Cargar privilegios
+      fetch("http://localhost:3333/api/security/values/getAllValues")
+        .then(res => res.json())
+        .then(data => {
+          const privilegeItems = data.value.filter(v => v.LABELID === "IdPrivileges");
+          const oPrivilegeModel = new JSONModel({ values: privilegeItems });
+          this.getView().setModel(oPrivilegeModel, "privilegeCatalogModel");
+        });
 
-    // 5. Abrir el diálogo
-    this._pDialog.setTitle("Crear Rol");
-    this._pDialog.open();
+      // 5. Abrir el diálogo
+      this._pDialog.setTitle("Crear Rol");
+      this._pDialog.open();
     },
 
     ///  FUNCION AGREGAAR ROL///
-          onSaveRole: async function () {
+    onSaveRole: async function () {
       const oView = this.getView();
       const oModel = oView.getModel("newRoleModel");
       const roleData = oModel.getData();
@@ -379,19 +379,19 @@ sap.ui.define([
       }
     },
 
-     
+
     //abrir ventana edit
-    onEditRole:  async function () {
-    const oTable = this.byId("rolesTable");
-    const iIndex = oTable.getSelectedIndex();
+    onEditRole: async function () {
+      const oTable = this.byId("rolesTable");
+      const iIndex = oTable.getSelectedIndex();
 
-    if (iIndex === -1) {
-      MessageToast.show("Selecciona un rol para editar.");
-      return;
-    }
+      if (iIndex === -1) {
+        MessageToast.show("Selecciona un rol para editar.");
+        return;
+      }
 
-    const oContext = oTable.getContextByIndex(iIndex);
-    const oSelected = oContext.getObject();
+      const oContext = oTable.getContextByIndex(iIndex);
+      const oSelected = oContext.getObject();
       // Cargar procesos
     const resProc = await fetch("http://localhost:3333/api/security/process/getAllProcesses");
     const dataProc = await resProc.json();
@@ -401,31 +401,31 @@ sap.ui.define([
     const oProcessModel = new JSONModel({ values: filteredProcesses });
     this.getView().setModel(oProcessModel, "processCatalogModel");
 
-    // Cargar privilegios
-    const resPriv = await fetch("http://localhost:3333/api/security/values/getAllValues");
-    const dataPriv = await resPriv.json();
-    const privilegeItems = dataPriv.value.filter(v => v.LABELID === "IdPrivileges");
-    const oPrivilegeModel = new JSONModel({ values: privilegeItems });
-    this.getView().setModel(oPrivilegeModel, "privilegeCatalogModel");
+      // Cargar privilegios
+      const resPriv = await fetch("http://localhost:3333/api/security/values/getAllValues");
+      const dataPriv = await resPriv.json();
+      const privilegeItems = dataPriv.value.filter(v => v.LABELID === "IdPrivileges");
+      const oPrivilegeModel = new JSONModel({ values: privilegeItems });
+      this.getView().setModel(oPrivilegeModel, "privilegeCatalogModel");
 
-    oSelected.NEW_PROCESSID = "";
-    oSelected.NEW_PRIVILEGES = [];
+      oSelected.NEW_PROCESSID = "";
+      oSelected.NEW_PRIVILEGES = [];
 
-    const oEditModel = new JSONModel(Object.assign({}, oSelected));
-    this.getView().setModel(oEditModel, "editRole"); 
+      const oEditModel = new JSONModel(Object.assign({}, oSelected));
+      this.getView().setModel(oEditModel, "editRole");
 
-    if (!this._pEditDialog) {
-      Fragment.load({
-        name: "com.invertions.sapfiorimodinv.view.security.fragments.EditRoleDialog",
-        controller: this
-      }).then(oDialog => {
-        this._pEditDialog = oDialog;
-        this.getView().addDependent(oDialog);
+      if (!this._pEditDialog) {
+        Fragment.load({
+          name: "com.invertions.sapfiorimodinv.view.security.fragments.EditRoleDialog",
+          controller: this
+        }).then(oDialog => {
+          this._pEditDialog = oDialog;
+          this.getView().addDependent(oDialog);
+          this._pEditDialog.open();
+        });
+      } else {
         this._pEditDialog.open();
-      });
-    } else {
-      this._pEditDialog.open();
-    }
+      }
     },
 
 

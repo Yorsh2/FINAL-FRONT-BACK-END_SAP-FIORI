@@ -14,22 +14,22 @@ const userSchema = new mongoose.Schema({
     // ESTRUCTURA PRINCIPAL (sec-users.cds)
     // ==============================================
     USERID: { type: String, required: true, unique: true },             // <- sec-users.cds (campo clave)
-    PASSWORD: { type: String, required: true },                         // <- sec-users.cds
-    USERNAME: { type: String, required: true },                         // <- sec-users.cds
+    PASSWORD: { type: String },                         // <- sec-users.cds
+    USERNAME: { type: String },                         // <- sec-users.cds
     ALIAS: { type: String }, // <- sec-users.cds
-    FIRSTNAME: { type: String, required: true },                        // <- sec-users.cds
-    LASTNAME: { type: String, required: true },                         // <- sec-users.cds
+    FIRSTNAME: { type: String },                        // <- sec-users.cds
+    LASTNAME: { type: String },                         // <- sec-users.cds
 
     // Formato DD.MM.YYYY
     BIRTHDAYDATE: { type: String },                                     // <- sec-users.cds 
-    COMPANYID: { type: Number, required: true },                        // <- sec-users.cds
-    COMPANYNAME: { type: String, required: true },                      // <- sec-users.cds
+    COMPANYID: { type: String },                        // <- sec-users.cds
+    COMPANYNAME: { type: String },                      // <- sec-users.cds
     COMPANYALIAS: { type: String },                                     // <- sec-users.cds
     CEDIID: { type: String },                                           // <- sec-users.cds
     EMPLOYEEID: { type: String },                                       // <- sec-users.cds
 
     // Validación básica de email
-    EMAIL: { type: String, required: true, match: /^\S+@\S+\.\S+$/ },   // <- sec-users.cds
+    EMAIL: { type: String, match: /^\S+@\S+\.\S+$/ },   // <- sec-users.cds
     PHONENUMBER: { type: String },                                      // <- sec-users.cds
     EXTENSION: { type: String, default: "" },                           // <- sec-users.cds
     DEPARTMENT: { type: String },                                       // <- sec-users.cds
@@ -42,7 +42,7 @@ const userSchema = new mongoose.Schema({
     COUNTRY: { type: String },                                          // <- sec-users.cds
     AVATAR: { type: String, default: "" },                              // <- sec-users.cds
     ROLES: [{
-        ROLEID: { type: String, required: true },                       // <- sec-roles.cds (asociación)
+        ROLEID: { type: String },                       // <- sec-roles.cds (asociación)
         ROLEIDSAP: { type: String, default: "" }                        // <- sec-roles.cds
     }],                                                                 // <- sec-users.cds (array de UserRoles)
 

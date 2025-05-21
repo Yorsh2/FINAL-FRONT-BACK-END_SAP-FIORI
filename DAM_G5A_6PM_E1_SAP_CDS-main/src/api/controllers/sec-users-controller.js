@@ -8,7 +8,8 @@ const {
     CreateUser,
     UpdateOneUser,
     DeactivateUser,
-    DeletePhysicalUser
+    DeletePhysicalUser,
+    ActivateUser
 } = require('../services/sec-users-service');
 
 // 3.- Estructura principal de la clase de controller
@@ -62,6 +63,16 @@ class SecurityUsersController extends cds.ApplicationService {
         this.on('deleteusers', async (req) => {
             try {
                 const result = await DeactivateUser(req);
+                return result;
+            } catch (error) {
+                const status = error.message.includes('no encontrado') ? 404 : 500;
+                req.error(status, error.message);
+            }
+        });
+
+        this.on('activateusers', async (req) => {
+            try {
+                const result = await ActivateUser(req);
                 return result;
             } catch (error) {
                 const status = error.message.includes('no encontrado') ? 404 : 500;

@@ -14,6 +14,7 @@ sap.ui.define([
 			oRouter.getRoute("RouteUserDetails").attachPatternMatched(this._onRouteMatched,this);
         },
 		
+		
 		_onRouteMatched: async function(oEvent){
 			const sUserId = oEvent.getParameter("arguments").USERID;
 			console.log("sUserID",sUserId);

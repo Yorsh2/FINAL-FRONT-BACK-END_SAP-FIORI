@@ -39,4 +39,10 @@ service SecurityRoute @(path:'/api/security/users') {
         @Core.Description: 'ID del usuario a eliminar' userid: String
     ) returns String;
 
+    @Core.Description: 'Activar usuario (borrado lógico)'
+    @path: 'activateusers'
+    action activateusers(
+        @Core.Description: 'ID del usuario a desactivar' USERID: String
+    ) returns users;
+
 }

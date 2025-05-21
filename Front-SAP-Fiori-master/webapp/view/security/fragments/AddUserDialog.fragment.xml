@@ -1,4 +1,4 @@
-<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core">
+<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:model="sap.ui.model">
     <Dialog
         id="AddUserDialog"
         title="Añadir Usuario"
@@ -6,58 +6,100 @@
         type="Message"
         class="customDialogSize"
         draggable="true"
-        resizable="true"
-    >
+        resizable="true">
+        
         <VBox id="AddUserDialogVbox" class="sapUiSmallMargin">
+            <!-- Campos con eventos de cambio -->
+            <Input 
+                id="inputUserId" 
+                value="{newUser>/USERID}" 
+                required="true"
+                placeholder="ID de Usuario"
+                change=".onFieldChange"
+                liveChange=".onLiveChange"/>
+                
+            <Input 
+                id="inputUsername" 
+                value="{newUser>/USERNAME}" 
+                required="true"
+                placeholder="Nombre Completo"
+                change=".onFieldChange"
+                liveChange=".onLiveChange"/>
+                
+            <Input 
+                id="inputUserPhoneNumber" 
+                value="{newUser>/PHONENUMBER}" 
+                required="true"
+                placeholder="Número telefónico"
+                change=".onFieldChange"
+                liveChange=".onLiveChange"/>
+                
+            <Input 
+                id="inputUserEmail" 
+                value="{newUser>/EMAIL}" 
+                placeholder="Correo Electrónico"
+                change=".onFieldChange"
+                liveChange=".onLiveChange"/>
+                
+            <DatePicker
+                id="inputUserBirthdayDate"
+                value="{
+                    path: 'newUser>/BIRTHDAYDATE',
+                    type: 'sap.ui.model.type.Date',
+                    formatOptions: {
+                        pattern: 'dd.MM.yyyy'
+                    }
+                }"
+                placeholder="Fecha de nacimiento"
+                change=".onDateChange"
+            />
 
-            <!-- Binding al modelo nombrado 'newUser' -->
-            <Input id="inputUserId" value="{newUser>USERID}" placeholder="ID de Usuario"/>
-            <Input id="inputUsername" value="{newUser>USERNAME}" placeholder="Nombre Completo"/>
-            <Input id="inputUserPhoneNumber" value="{newUser>PHONENUMBER}" placeholder="Número telefónico"/>
-            <Input id="inputUserEmail" value="{newUser>EMAIL}" placeholder="Correo Electrónico"/>
-            <DatePicker id="inputUserBirthdayDate" value="{newUser>BIRTHDAYDATE}" placeholder="Fecha de nacimiento"/>
 
             <ComboBox 
                 id="comboBoxCompanies" 
                 items="{companiesModel>/value}" 
-                selectionChange="onCompanySelected" 
+                selectedKey="{newUser>/COMPANYID}"
+                selectionChange=".onCompanySelected" 
                 placeholder="Compañía">
                 <core:Item key="{companiesModel>VALUEID}" text="{companiesModel>VALUE}" />
             </ComboBox>
 
-
             <ComboBox 
                 id="comboBoxCedis" 
                 items="{deptosModel>/value}" 
-                selectionChange="onCediSelected" 
+                selectedKey="{newUser>/DEPARTMENT}"
+                selectionChange=".onCediSelected" 
                 placeholder="Departamento">
                 <core:Item key="{deptosModel>VALUEID}" text="{deptosModel>VALUE}" />
             </ComboBox>
 
-
             <ComboBox
                 id="comboBoxRoles"
                 items="{rolesModel>/roles}"
-                selectionChange="onRoleSelected"
+                selectionChange=".onRoleSelected"
                 placeholder="Selecciona un Rol">
                 <core:Item key="{rolesModel>ROLEID}" text="{rolesModel>ROLENAME}" />
             </ComboBox>
 
 
             <VBox id="selectedRolesVBox" class="sapUiSmallMarginTop">
-                <!-- VBox donde va añadiendo los roles -->
+                <!-- Roles seleccionados aparecerán aquí -->
             </VBox>
 
-            <Input id="inputUserFunction" value="{newUser>FUNCTION}" placeholder="Función que ejerce"/>
-
+            <Input 
+                id="inputUserFunction" 
+                value="{newUser>/FUNCTION}" 
+                placeholder="Función que ejerce"
+                change=".onFieldChange"
+                liveChange=".onLiveChange"/>
         </VBox>
 
         <beginButton>
-            <Button id="SaveNewUser" text="Guardar" type="Emphasized" press="onSaveUser" />
+            <Button id="SaveNewUser" text="Guardar" type="Emphasized" press=".onSaveUser" />
         </beginButton>
 
         <endButton>
-            <Button id="CancelSaveUser" text="Cancelar" press="onCancelUser" />
+            <Button id="CancelSaveUser" text="Cancelar" press=".onCancelUser" />
         </endButton>
     </Dialog>
 </core:FragmentDefinition>

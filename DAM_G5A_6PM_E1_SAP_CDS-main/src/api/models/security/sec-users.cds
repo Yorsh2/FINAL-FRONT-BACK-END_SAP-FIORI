@@ -12,7 +12,7 @@ entity Users {
         LASTNAME     : String(50);
         BIRTHDAYDATE : String(10);
         AVATAR       : String(255) default '';
-        COMPANYID    : Integer;
+        COMPANYID    : String(30);
         COMPANYNAME  : String(100);
         COMPANYALIAS : String(10);
         CEDIID       : String(20);
