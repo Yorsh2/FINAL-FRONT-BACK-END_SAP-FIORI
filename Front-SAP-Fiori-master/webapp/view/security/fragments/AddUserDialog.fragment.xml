@@ -73,11 +73,10 @@
                 <core:Item key="{deptosModel>VALUEID}" text="{deptosModel>VALUE}" />
             </ComboBox>
 
-            <ComboBox
-                id="comboBoxRoles"
-                items="{rolesModel>/roles}"
-                selectionChange=".onRoleSelected"
-                placeholder="Selecciona un Rol">
+            <ComboBox id="comboBoxRoles" 
+                items="{rolesModel>/roles}" 
+                placeholder="Selecciona un Rol" 
+                selectionChange=".onRoleSelected">
                 <core:Item key="{rolesModel>ROLEID}" text="{rolesModel>ROLENAME}" />
             </ComboBox>
 

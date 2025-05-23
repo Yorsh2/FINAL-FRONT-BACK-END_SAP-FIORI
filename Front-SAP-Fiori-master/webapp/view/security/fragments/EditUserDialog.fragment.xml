@@ -17,13 +17,23 @@
 
             <Input id="inputEditUserEmail" value="{editUser>/EMAIL}" type="Email" placeholder="Correo Electrónico"/>
 
-            <DatePicker id="inputEditUserBirthdayDate" value="{editUser>/BIRTHDAYDATE}" placeholder="Fecha de nacimiento"/>
+            <DatePicker id="inputEditUserBirthdayDate"  valueFormat="yyyy-MM-dd" displayFormat="dd.MM.yyyy" value="{editUser>/BIRTHDAYDATE}" placeholder="Fecha de nacimiento"/>
 
-            <ComboBox id="comboBoxEditCompanies" selectedKey="{editUser>/COMPANYID}" items="{companiesModel>/value}" placeholder="Compañía">
+            <ComboBox id="comboBoxEditCompanies" 
+                selectedKey="{editUser>/COMPANYID}" 
+                items="{companiesModel>/value}" 
+                placeholder="Compañía"
+                selectionChange="onEditCompanySelected">
                 <core:Item key="{companiesModel>VALUEID}" text="{companiesModel>VALUE}" />
             </ComboBox>
 
-            <ComboBox id="comboBoxEditCedis" selectedKey="{editUser>/DEPARTMENT}" items="{deptosModel>/value}" placeholder="Departamento">
+            <ComboBox id="comboBoxEditCedis" 
+                selectedKey="{editUser>/DEPARTMENT_ID}"
+                items="{
+                    path: 'deptosModel>/value',
+                    templateShareable: false
+                }"
+                placeholder="Departamento">
                 <core:Item key="{deptosModel>VALUEID}" text="{deptosModel>VALUE}" />
             </ComboBox>
 
@@ -36,7 +46,9 @@
                 <!--VBOx donde va añadiendo los roles -->
             </VBox>
 
-            <Input id="inputEditUserFunction" placeholder="Función que ejerce"/>
+            <Input id="inputEditUserFunction" 
+                value="{editUser>/FUNCTION}" 
+                placeholder="Función que ejerce"/>
 
         </VBox>
 

@@ -149,56 +149,134 @@ async function CreateUser(req) {
 
 async function UpdateOneUser(req) {
     try {
-        // Obtener USERID del query parameter (igual que en inversiones)
+        // 1. Validación básica del request
         const USERID = req.req.query.USERID;
         const userData = req.req.body.user;
 
-        if (!USERID) {
-            throw new Error("El parámetro USERID es requerido en la query string");
+        if (!USERID || !userData) {
+            throw new Error('Se requieren USERID en query y user en body');
         }
 
-        // Verificar que el usuario existe
+        console.log('🔄 Datos del usuario recibidos para actualización:', {
+            userId: USERID,
+            userData: userData
+        });
+
+        // 2. Buscar usuario existente (case-sensitive)
         const existingUser = await Users.findOne({
-            USERID: USERID,
-            'DETAIL_ROW.DELETED': false
+            USERID: USERID
         });
 
         if (!existingUser) {
-            throw new Error(`No se encontró un usuario con ID: ${USERID}`);
+            throw new Error(`Usuario con ID ${USERID} no encontrado`);
         }
 
-        // Preparar registro de auditoría
+        // 3. Procesamiento de compañía y departamento (igual que CreateUser)
+        let companyName = existingUser.COMPANYNAME;
+        if (userData.COMPANYID && userData.COMPANYID !== existingUser.COMPANYID) {
+            const company = await Values.findOne({
+                LABELID: "IdCompanies",
+                VALUEID: userData.COMPANYID
+            });
+            companyName = company ? company.VALUE : "";
+        }
+
+        let departmentName = existingUser.DEPARTMENT;
+        if (userData.DEPARTMENT && userData.DEPARTMENT !== existingUser.DEPARTMENT) {
+            const department = await Values.findOne({
+                LABELID: "IdCedis",
+                VALUEID: userData.DEPARTMENT
+            });
+            departmentName = department ? department.VALUE : userData.DEPARTMENT; // Si no encuentra el departamento, mantener el VALUEID
+        }
+
+        // Resto del código sigue igual...
+        // 4. Procesamiento de roles (igual que CreateUser pero manteniendo IDs existentes)
+        let processedRoles = [];
+        if (Array.isArray(userData.ROLES)) {
+            for (const role of userData.ROLES) {
+                let roleWithDetails = { ...role };
+                if (role.ROLEID) {
+                    const roleDoc = await Roles.findOne({ ROLEID: role.ROLEID });
+                    if (roleDoc) {
+                        roleWithDetails.ROLEIDSAP = roleDoc.ROLENAME;
+                        roleWithDetails.ROLENAME = roleDoc.ROLENAME;
+                    }
+                }
+                processedRoles.push(roleWithDetails);
+            }
+        } else {
+            // Si no se envían roles, mantener los existentes
+            processedRoles = existingUser.ROLES || [];
+        }
+
+        // Resto de la función sigue igual...
+        // 5. Preparar registro de auditoría (nuevo registro)
         const auditEntry = {
             CURRENT: true,
             REGDATE: new Date(),
             REGTIME: new Date(),
-            REGUSER: 'system'
+            REGUSER: userData.USERID || 'system'
         };
 
-        // Actualizar el usuario (excluyendo campos protegidos)
-        const { USERID: _, PASSWORD: __, ...safeUpdates } = userData;
+        // 6. Construir objeto de actualización
+        const updatePayload = {
+            ...existingUser.toObject(), // Campos existentes
+            ...userData,               // Sobrescribir con nuevos datos
+            COMPANYNAME: companyName,
+            DEPARTMENT: departmentName, // Aquí se usará el nombre del departamento obtenido
+            ROLES: processedRoles,
+            DETAIL_ROW: {
+                ...existingUser.DETAIL_ROW,
+                DETAIL_ROW_REG: [
+                    ...existingUser.DETAIL_ROW.DETAIL_ROW_REG.map(reg => ({
+                        ...reg.toObject(),
+                        CURRENT: false // Marcar registros anteriores como no current
+                    })),
+                    auditEntry // Nuevo registro como current
+                ]
+            },
+            updatedAt: new Date() // Campo de timestamp adicional
+        };
 
+        // Resto del código sigue igual...
+        // 7. Eliminar campos internos que no deben actualizarse
+        delete updatePayload._id;
+        delete updatePayload.__v;
+        delete updatePayload.DETAIL_ROW._id;
+
+        // 8. Ejecutar actualización
         const updatedUser = await Users.findOneAndUpdate(
             { USERID: USERID },
-            {
-                $set: {
-                    ...safeUpdates,
-                    DETAIL_ROW_REG: [
-                        ...existingUser.DETAIL_ROW.DETAIL_ROW_REG.filter(reg => !reg.CURRENT),
-                        auditEntry
-                    ]
-                }
-            },
+            { $set: updatePayload },
             { new: true }
-        ).select('-PASSWORD').lean();
+        ).select('-PASSWORD');
 
+        if (!updatedUser) {
+            throw new Error('Error al actualizar el usuario');
+        }
+
+        // 9. Retornar respuesta consistente
         return {
+            success: true,
             message: `Usuario ${USERID} actualizado correctamente`,
-            user: updatedUser
+            user: updatedUser.toObject()
         };
 
     } catch (error) {
-        console.error('Error en UpdateOneUser:', error);
+        console.error('Error en UpdateOneUser:', {
+            error: error.message,
+            stack: error.stack,
+            query: req.req.query,
+            body: req.req.body,
+            timestamp: new Date().toISOString()
+        });
+
+        // Manejar errores de duplicados igual que CreateUser
+        if (error.code === 11000) {
+            error.message = 'Conflicto al actualizar el usuario';
+        }
+
         throw error;
     }
 }

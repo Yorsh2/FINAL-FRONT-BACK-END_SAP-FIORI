@@ -144,8 +144,8 @@ sap.ui.define([
                 if (res.ok) {
                     MessageToast.show("Usuario creado exitosamente");
                     this.byId("AddUserDialog").close();
-                    this.resetNewUserModel();
-                    // this.loadUsers();
+                    this.loadUsers();
+
                 } else {
                     MessageBox.error("Error: " + (result.message || "No se pudo crear el usuario"));
                 }
@@ -159,50 +159,27 @@ sap.ui.define([
         prepareUserPayload: function () {
             const oView = this.getView();
             const oUserModel = oView.getModel("newUser");
-            const oRolesModel = oView.getModel("rolesModel");
-            const oDeptosModel = oView.getModel("deptosModel");
-
             const userData = oUserModel.getData();
 
-            // Obtener el nombre de la compañía
-            const companyName = userData.COMPANYNAME || "";
+            // Obtener roles con sus nombres completos
+            const aRolesWithNames = (userData.selectedRoles || []).map(role => ({
+                ROLEID: role.ROLEID,
+                ROLENAME: role.ROLENAME
+            }));
 
-            // Obtener el nombre del departamento basado en DEPARTMENTID
-            let departmentName = "";
-            if (oDeptosModel && oDeptosModel.getData() && Array.isArray(oDeptosModel.getData().value)) {
-                const depto = oDeptosModel.getData().value.find(d => d.VALUEID === userData.DEPARTMENTID);
-                if (depto) {
-                    departmentName = depto.VALUE || "";  // Ajusta según la estructura real
-                }
-            }
-
-            // Obtener los roles completos (con nombres) a partir de los ROLEIDs seleccionados
-            let rolesWithNames = [];
-            if (oRolesModel && Array.isArray(oRolesModel.getData().roles)) {
-                rolesWithNames = userData.ROLES.map(roleId => {
-                    const foundRole = oRolesModel.getData().roles.find(r => r.ROLEID === roleId);
-                    if (foundRole) {
-                        return {
-                            ROLEID: foundRole.ROLEID,
-                            ROLENAME: foundRole.ROLENAME,
-                            ROLEIDSAP: foundRole.ROLEIDSAP || ""
-                        };
-                    }
-                    return { ROLEID: roleId, ROLENAME: "", ROLEIDSAP: "" };
-                });
-            }
-
-            // Construir el objeto final que enviarás
+            // Construir payload
             const payload = {
-                USERID: userData.USERID,
-                USERNAME: userData.USERNAME,
-                EMAIL: userData.EMAIL,
-                PHONENUMBER: userData.PHONENUMBER,
-                BIRTHDAYDATE: userData.BIRTHDAYDATE,
-                COMPANY: companyName,
-                DEPARTMENT: departmentName,
-                FUNCTION: userData.FUNCTION,
-                ROLES: rolesWithNames
+                user: {
+                    USERID: userData.USERID,
+                    USERNAME: userData.USERNAME,
+                    EMAIL: userData.EMAIL,
+                    PHONENUMBER: userData.PHONENUMBER,
+                    BIRTHDAYDATE: userData.BIRTHDAYDATE,
+                    COMPANYID: userData.COMPANYID,
+                    DEPARTMENT: userData.DEPARTMENT,
+                    FUNCTION: userData.FUNCTION,
+                    ROLES: aRolesWithNames
+                }
             };
 
             return payload;
@@ -262,59 +239,97 @@ sap.ui.define([
                 const oEditModel = oView.getModel("editUser");
                 const oUserData = oEditModel.getData();
 
-                // 2. Validaciones básicas
-                if (!oUserData.USERID || !oUserData.USERNAME || !oUserData.EMAIL) {
-                    MessageBox.error("Complete los campos obligatorios");
+                // 2. Validación detallada de campos obligatorios
+                if (!oUserData.USERID || !oUserData.USERNAME || !oUserData.EMAIL ||
+                    !oUserData.COMPANYID || !oUserData.DEPARTMENT_ID) {
+                    MessageBox.warning("Completa todos los campos obligatorios.");
                     return;
                 }
 
-                // 3. Cargar configuración del entorno
-                const envRes = await fetch("env.json");
-                const env = await envRes.json();
+                // 3. Validar al menos un rol
+                var aSelectedRoles = oEditModel.getProperty("/selectedRoles") || [];
+                if (aSelectedRoles.length === 0) {
+                    MessageBox.error("Debe seleccionar al menos un rol");
+                    return;
+                }
 
-                // 4. Construir payload
+                // 4. Obtener el nombre del departamento basado en DEPARTMENT_ID
+                const aDeptos = oView.getModel("deptosModel").getData().value || [];
+                const oSelectedDepto = aDeptos.find(dept => dept.VALUEID === oUserData.DEPARTMENT_ID);
+
+                if (!oSelectedDepto) {
+                    MessageBox.error("El departamento seleccionado no es válido");
+                    return;
+                }
+
+                // Asignar el nombre del departamento
+                const sDepartmentName = oSelectedDepto.VALUE;
+                oEditModel.setProperty("/DEPARTMENT", sDepartmentName);
+
+                // 5. Construir payload con el nombre del departamento
+                const now = new Date();
                 const payload = {
                     user: {
                         USERID: oUserData.USERID,
                         USERNAME: oUserData.USERNAME,
+                        FIRSTNAME: oUserData.USERNAME,
                         EMAIL: oUserData.EMAIL,
                         PHONENUMBER: oUserData.PHONENUMBER,
-                        BIRTHDAYDATE: oUserData.BIRTHDAYDATE ? this._formatDateForAPI(oUserData.BIRTHDAYDATE) : null,
+                        BIRTHDAYDATE: oUserData.BIRTHDAYDATE ? this.formatDateToString(oUserData.BIRTHDAYDATE) : null,
                         COMPANYID: oUserData.COMPANYID,
-                        DEPARTMENT: oUserData.DEPARTMENT,
+                        DEPARTMENT: sDepartmentName, // Usar el nombre obtenido
+                        DEPARTMENT_ID: oUserData.DEPARTMENT_ID, // Mantener el ID también si es necesario
                         FUNCTION: oUserData.FUNCTION,
-                        ROLES: oUserData.selectedRoles.map(role => ({ ROLEID: role.ROLEID }))
+                        ACTIVO: true,
+                        DETAIL_ROW: {
+                            DETAIL_ROW_REG: [{
+                                CURRENT: true,
+                                REGDATE: now.toISOString(),
+                                REGTIME: now.toISOString(),
+                                REGUSER: "admin"
+                            }]
+                        },
+                        ROLES: aSelectedRoles.map(function (oRole) {
+                            return {
+                                ROLEID: oRole.ROLEID,
+                                ROLENAME: oRole.ROLENAME || ""
+                            };
+                        })
                     }
                 };
 
-                // 5. Enviar petición de actualización
-                const sUrl = `${env.API_USERS_URL_BASE}updateUser`;
-                const response = await fetch(sUrl, {
+                console.log("Payload de actualización:", payload);
+
+                // 6. Obtener configuración del entorno
+                const envRes = await fetch("env.json");
+                const env = await envRes.json();
+                const url = `${env.API_USERS_URL_BASE}updateone?USERID=${encodeURIComponent(oUserData.USERID)}`;
+
+                // 7. Enviar petición PUT
+                const res = await fetch(url, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${env.API_TOKEN}`
+                        "Authorization": "Bearer " + env.API_TOKEN
                     },
                     body: JSON.stringify(payload)
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}`);
-                }
+                const result = await res.json();
 
-                const result = await response.json();
-
-                if (result.success) {
-                    MessageToast.show("Usuario actualizado correctamente");
-                    this._oEditUserDialog.close();
-                    this.loadUsers(); // Refrescar la lista
+                if (res.ok) {
+                    MessageToast.show("Usuario actualizado exitosamente");
+                    if (this._oEditUserDialog) {
+                        this._oEditUserDialog.close();
+                    }
+                    this.loadUsers();
                 } else {
-                    MessageBox.error(result.message || "Error al actualizar el usuario");
+                    MessageBox.error("Error: " + (result.message || "No se pudo actualizar el usuario"));
                 }
 
-            } catch (error) {
-                console.error("Error al guardar cambios:", error);
-                MessageBox.error(`Error al guardar: ${error.message}`);
+            } catch (e) {
+                console.error("Error al actualizar usuario:", e);
+                MessageBox.error("Error de conexión con el servidor.");
             } finally {
                 this.getView().setBusy(false);
             }
@@ -330,16 +345,21 @@ sap.ui.define([
             const oModel = this.getView().getModel("editUser");
             const aRoles = oModel.getProperty("/selectedRoles") || [];
 
-            // Verificar si ya está
-            if (aRoles.some(role => role.ROLEID === sRoleId)) {
+            // Verificar por nombre de rol
+            if (aRoles.some(role => role.ROLENAME === sRoleName)) {
                 MessageToast.show("Este rol ya fue agregado.");
+                oEvent.getSource().setSelectedKey(null);
                 return;
             }
 
-            aRoles.push({ ROLEID: sRoleId, ROLENAME: sRoleName });
+            aRoles.push({
+                ROLEID: sRoleId,
+                ROLENAME: sRoleName
+            });
             oModel.setProperty("/selectedRoles", aRoles);
 
             this._updateSelectedRolesView(aRoles, true);
+            oEvent.getSource().setSelectedKey(null);
         },
 
         // Cancelar la edición del usuario
@@ -472,13 +492,98 @@ sap.ui.define([
             this.getView().getModel("viewModel").setProperty("/buttonsEnabled", true);
         },
 
-        onSearchUser: function () {
-            //Aplicar el filtro de búsqueda para la tabla
+        onSearchUser: function (oEvent) {
+            try {
+                const sQueryRaw = oEvent.getSource().getValue();
+                const sQuery = this._normalizeText(sQueryRaw);
+                const oTable = this.getView().byId("IdTable1UsersManageTable");
+
+                if (sQuery) {
+                    const aSearchFields = [
+                        "USERID",
+                        "USERNAME",
+                        "BIRTHDAYDATE",
+                        "COMPANYNAME",
+                        "EMAIL",
+                        "PHONENUMBER",
+                        "FUNCTION"
+                    ];
+
+                    const aFilters = aSearchFields.map(sField => {
+                        return new sap.ui.model.Filter({
+                            path: sField,
+                            operator: sap.ui.model.FilterOperator.Contains,
+                            value1: sQueryRaw // usamos sin normalizar aquí porque UI5 compara con texto real
+                        });
+                    });
+
+                    // Filtro para ROLES
+                    const oRolesFilter = new sap.ui.model.Filter({
+                        path: "ROLES",
+                        test: (aRoles) => {
+                            const sFormattedRoles = this._normalizeText(this.formatRoles(aRoles));
+                            return sFormattedRoles.includes(sQuery);
+                        }
+                    });
+
+                    // Filtro para estado Activo/Inactivo
+                    // Busca tanto por la palabra completa, o por las primeras letras que coinciden
+                    const oStatusFilter = new sap.ui.model.Filter({
+                        path: "",
+                        test: (oContext) => {
+                            const bActive = oContext?.DETAIL_ROW?.ACTIVED;
+                            const sStatus = this._normalizeText(this.formatStatusText(bActive)); // "activo" o "inactivo"
+                            const sNormalizedQuery = this._normalizeText(sQuery); // lo que escribió el usuario
+
+                            // Coincide si el status comienza con el texto buscado
+                            return sStatus.startsWith(sNormalizedQuery);
+                        }
+                    });
+
+
+                    // Filtro para nombre parcial del DEPARTAMENTO
+                    const oDepartmentFilter = new sap.ui.model.Filter({
+                        path: "DEPARTMENT",
+                        test: (sDepartmentName) => {
+                            const sDept = this._normalizeText(sDepartmentName);
+                            return sDept.includes(sQuery);
+                        }
+                    });
+
+                    // Combinar filtros
+                    const oCombinedFilter = new sap.ui.model.Filter([
+                        ...aFilters,
+                        oRolesFilter,
+                        oStatusFilter,
+                        oDepartmentFilter
+                    ], false); // false = OR lógico
+
+                    oTable.getBinding("rows").filter(oCombinedFilter);
+                } else {
+                    oTable.getBinding("rows").filter([]);
+                }
+            } catch (error) {
+                console.error("Error en búsqueda:", error);
+                MessageBox.error("Error al realizar la búsqueda");
+            }
         },
+
+
+        // Función auxiliar para normalizar texto
+        _normalizeText: function (sText) {
+            if (!sText) return "";
+            return sText.toString()
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "");
+        },
+
 
         onRefresh: function () {
             this.loadUsers();
         },
+
+
 
         //====================================================================================================================================================================
         //=========== FUNCIONES PARA CARGAR INFORMACIÓN ======================================================================================================================
@@ -544,7 +649,14 @@ sap.ui.define([
             registrados en cada compañia, por lo que primero tiene que hacer la consulta
             de las compañias y elegir una para ejecutar esta función.
         */
-        loadDeptos: function (companyId) {
+        loadDeptos: function (companyId, selectedDepto = "") {
+            console.log("🔧 Entrando a loadDeptos con companyId:", companyId);
+
+            if (!companyId) {
+                console.warn("⚠️ companyId está vacío o undefined. Abortando fetch.");
+                return;
+            }
+
             var that = this;
             var oModel = new JSONModel();
 
@@ -552,12 +664,39 @@ sap.ui.define([
                 .then(res => res.json())
                 .then(env => {
                     var url = env.API_VALUES_URL_BASE + "getCompanyById?companyid=" + encodeURIComponent(companyId);
+                    console.log("🌐 URL de fetch departamentos:", url);
                     return fetch(url);
                 })
                 .then(res => res.json())
                 .then(data => {
-                    oModel.setData(data); // { value: [...] }
+                    // Asegurarse de que los datos vienen en el formato esperado
+                    if (!data.value && Array.isArray(data)) {
+                        data = { value: data };
+                    }
+
+                    oModel.setData(data);
                     that.getView().setModel(oModel, "deptosModel");
+
+                    // Establecer el departamento seleccionado si se proporcionó
+                    if (selectedDepto) {
+                        const oEditModel = that.getView().getModel("editUser");
+                        if (oEditModel) {
+                            // Verificar que el departamento existe en la lista
+                            const deptExists = data.value.some(dept => dept.DEPARTMENTID === selectedDepto);
+                            if (deptExists) {
+                                oEditModel.setProperty("/DEPARTMENT", selectedDepto);
+                                console.log("🏢 Departamento seleccionado en el modelo editUser:", selectedDepto);
+
+                                // Forzar la selección visual en el combobox
+                                const oDeptoCombo = that.byId("comboBoxEditCedis");
+                                if (oDeptoCombo) {
+                                    oDeptoCombo.setSelectedKey(selectedDepto);
+                                }
+                            } else {
+                                console.warn("El departamento del usuario no existe en la lista de departamentos de la compañía");
+                            }
+                        }
+                    }
                 })
                 .catch(err => {
                     MessageToast.show("Error al cargar los departamentos: " + err.message);
@@ -578,42 +717,48 @@ sap.ui.define([
                 .then(env => fetch(env.API_ROLES_URL_BASE + "getall"))
                 .then(res => res.json())
                 .then(data => {
-
-                    // 1. Extraer solo los roles únicos
+                    // Filtrar roles únicos por ROLENAME
                     const uniqueRoles = [];
-                    const seen = new Set();
+                    const seenNames = new Set();
 
                     data.value.forEach(role => {
-                        if (!seen.has(role.ROLENAME)) {
-                            seen.add(role.ROLENAME);
+                        // Usar ROLEIDSAP si está disponible, sino ROLENAME, sino ROLEID
+                        const roleName = role.ROLEIDSAP || role.ROLENAME || role.ROLEID;
+
+                        if (!seenNames.has(roleName)) {
+                            seenNames.add(roleName);
                             uniqueRoles.push({
                                 ROLEID: role.ROLEID,
-                                ROLENAME: role.ROLENAME
+                                ROLENAME: roleName,
+                                ROLEIDSAP: role.ROLEIDSAP
                             });
                         }
                     });
 
+                    // Ordenar alfabéticamente
+                    uniqueRoles.sort((a, b) => a.ROLENAME.localeCompare(b.ROLENAME));
 
-                    // 2. Establecer en el modelo
                     oRolesModel.setData({ roles: uniqueRoles });
                     oView.setModel(oRolesModel, "rolesModel");
                 })
-                .catch(err => MessageToast.show("Error al cargar roles: " + err.message));
+                .catch(err => {
+                    MessageToast.show("Error al cargar roles: " + err.message);
+                    console.error("Error loading roles:", err);
+                });
         },
 
         onRoleSelected: function (oEvent) {
             const oComboBox = oEvent.getSource();
-            const sDialogId = oComboBox.getId().includes("Edit") ? "Edit" : "Add";
-
             const sSelectedKey = oComboBox.getSelectedKey();
             const sSelectedText = oComboBox.getSelectedItem().getText();
 
-            const oModel = this.getView().getModel(sDialogId === "Edit" ? "editUser" : "newUser");
+            const oModel = this.getView().getModel("newUser");
             const aSelectedRoles = oModel.getProperty("/selectedRoles") || [];
 
-            // Validar duplicados
-            if (aSelectedRoles.some(role => role.ROLEID === sSelectedKey)) {
+            // Verificar si el rol ya fue seleccionado (por nombre)
+            if (aSelectedRoles.some(role => role.ROLENAME === sSelectedText)) {
                 MessageToast.show("Este rol ya fue seleccionado");
+                oComboBox.setSelectedKey(null);
                 return;
             }
 
@@ -624,7 +769,7 @@ sap.ui.define([
             });
 
             oModel.setProperty("/selectedRoles", aSelectedRoles);
-            this._updateSelectedRolesView(aSelectedRoles, sDialogId === "Edit");
+            this._updateSelectedRolesView(aSelectedRoles, false);
 
             // Limpiar selección
             oComboBox.setSelectedKey(null);
@@ -638,7 +783,7 @@ sap.ui.define([
                 var oHBox = new sap.m.HBox({
                     items: [
                         new sap.m.Label({
-                            text: oRole.ROLENAME
+                            text: oRole.ROLENAME || oRole.ROLEID
                         }).addStyleClass("sapUiSmallMarginEnd"),
                         new sap.m.Button({
                             icon: "sap-icon://decline",
@@ -652,7 +797,9 @@ sap.ui.define([
             }.bind(this));
         },
 
-
+        /*
+           Para eliminar los roles al añadir o editar usuario.
+       */
         _onRemoveRole: function (sRoleId, bIsEditDialog) {
             const sModelName = bIsEditDialog ? "editUser" : "newUser";
             const oModel = this.getView().getModel(sModelName);
@@ -686,15 +833,6 @@ sap.ui.define([
         //=======================================================================================================================================================
         //=========== Funciones de validaciones o extras ========================================================================================================
         //=======================================================================================================================================================
-
-        isValidEmail: function (email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        },
-
-        isValidPhoneNumber: function (phone) {
-            return /^\d{10}$/.test(phone); // Ejemplo: 10 dígitos numéricos
-        },
 
         resetNewUserModel: function () {
             const oView = this.getView();
@@ -776,11 +914,14 @@ sap.ui.define([
             this.loadDeptos(sCompanyId);
         },
 
-        formatDateToString: function (oDate) {
-            if (!(oDate instanceof Date)) return null;
-            const day = String(oDate.getDate()).padStart(2, "0");
-            const month = String(oDate.getMonth() + 1).padStart(2, "0");
-            const year = oDate.getFullYear();
+        formatDateToString: function (date) {
+            if (!date) return null;
+
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+
             return `${day}.${month}.${year}`;
         },
 
@@ -858,44 +999,93 @@ sap.ui.define([
                 const env = await envRes.json();
 
                 // 2. Obtener datos del usuario
-                const sUrl = `${env.API_USERS_URL_BASE}getUserById?userid=${encodeURIComponent(UserId)}`;
-                const response = await fetch(sUrl, {
+                const sUserUrl = `${env.API_USERS_URL_BASE}getUserById?userid=${encodeURIComponent(UserId)}`;
+                const userResponse = await fetch(sUserUrl, {
                     headers: {
                         "Authorization": `Bearer ${env.API_TOKEN}`
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Error ${response.status}`);
+                if (!userResponse.ok) {
+                    throw new Error(`Error ${userResponse.status}`);
                 }
 
-                const oUserData = await response.json();
+                const oUserData = await userResponse.json();
 
-                // 3. Crear modelo para el formulario de edición
+                // 3. Parsear fecha de nacimiento
+                let parsedBirthdayDate = this._parseDateString(oUserData.BIRTHDAYDATE);
+                if (!parsedBirthdayDate || Object.prototype.toString.call(parsedBirthdayDate) !== "[object Date]") {
+                    parsedBirthdayDate = null;
+                }
+
+                // 4. Crear modelo para el formulario de edición
                 const oEditModel = new JSONModel({
                     USERID: oUserData.USERID,
                     USERNAME: oUserData.USERNAME,
                     EMAIL: oUserData.EMAIL,
                     PHONENUMBER: oUserData.PHONENUMBER,
-                    BIRTHDAYDATE: oUserData.BIRTHDAYDATE ? new Date(oUserData.BIRTHDAYDATE) : null,
+                    BIRTHDAYDATE: parsedBirthdayDate,
                     COMPANYID: oUserData.COMPANYID,
-                    DEPARTMENT: oUserData.DEPARTMENT,
+                    DEPARTMENT: oUserData.DEPARTMENT, // Nombre del departamento
+                    DEPARTMENT_ID: "", // Lo estableceremos después
                     FUNCTION: oUserData.FUNCTION,
                     selectedRoles: oUserData.ROLES || []
                 });
 
                 oView.setModel(oEditModel, "editUser");
 
-                // 4. Cargar comboboxes
+                // 5. Cargar combo de compañías
                 await this.loadCompanies();
-                await this.loadDeptos(oUserData.COMPANYID);
+
+                // 6. Si tenemos COMPANYID, cargar los departamentos
+                if (oUserData.COMPANYID) {
+                    // Cargar departamentos de la compañía
+                    const sDeptUrl = `${env.API_VALUES_URL_BASE}getCompanyById?companyid=${encodeURIComponent(oUserData.COMPANYID)}`;
+                    const deptResponse = await fetch(sDeptUrl);
+                    const oDeptData = await deptResponse.json();
+
+                    if (oDeptData.value) {
+                        // Crear modelo de departamentos
+                        const oDeptModel = new JSONModel({
+                            value: oDeptData.value
+                        });
+                        oView.setModel(oDeptModel, "deptosModel");
+
+                        // Buscar el departamento que coincide con el nombre del usuario
+                        const foundDept = oDeptData.value.find(dept =>
+                            dept.VALUE === oUserData.DEPARTMENT
+                        );
+
+                        // Si encontramos el departamento, actualizar el modelo con el VALUEID
+                        if (foundDept) {
+                            oEditModel.setProperty("/DEPARTMENT_ID", foundDept.VALUEID);
+
+                            // Forzar la selección visual en el combobox
+                            const oDeptCombo = oView.byId("comboBoxEditCedis");
+                            if (oDeptCombo) {
+                                oDeptCombo.setSelectedKey(foundDept.VALUEID);
+                            }
+                        }
+                    }
+                }
+
+                // 7. Cargar roles
                 await this.loadRoles();
 
-                // 5. Vincular los controles al modelo
-                this._bindEditControls();
-
-                // 6. Mostrar roles seleccionados
+                // 8. Mostrar roles seleccionados
                 this._updateSelectedRolesView(oUserData.ROLES || [], true);
+
+                // 9. Forzar la selección visual en los combobox
+                if (oUserData.COMPANYID) {
+                    const oCompanyCombo = oView.byId("comboBoxEditCompanies");
+                    oCompanyCombo.setSelectedKey(oUserData.COMPANYID);
+                }
+
+                // 10. Establecer la función en el input
+                const oFunctionInput = oView.byId("inputEditUserFunction");
+                if (oUserData.FUNCTION) {
+                    oFunctionInput.setValue(oUserData.FUNCTION);
+                }
 
             } catch (error) {
                 console.error("Error al cargar datos del usuario:", error);
@@ -905,25 +1095,80 @@ sap.ui.define([
             }
         },
 
-        _bindEditControls: function () {
-            const oView = this.getView();
-
-            // Vincular controles al modelo editUser
-            oView.byId("inputEditUserId").bindProperty("value", "editUser>/USERID");
-            oView.byId("inputEditUsername").bindProperty("value", "editUser>/USERNAME");
-            oView.byId("inputEditUserPhoneNumber").bindProperty("value", "editUser>/PHONENUMBER");
-            oView.byId("inputEditUserEmail").bindProperty("value", "editUser>/EMAIL");
-            oView.byId("inputEditUserBirthdayDate").bindProperty("dateValue", "editUser>/BIRTHDAYDATE");
-            oView.byId("comboBoxEditCompanies").bindProperty("selectedKey", "editUser>/COMPANYID");
-            oView.byId("comboBoxEditCedis").bindProperty("selectedKey", "editUser>/DEPARTMENT");
-            oView.byId("inputEditUserFunction").bindProperty("value", "editUser>/FUNCTION");
-        },
-
         // Formato de la fecha de la API
         _formatDateForAPI: function (oDate) {
-            if (!(oDate instanceof Date)) return null;
-            const pad = num => num.toString().padStart(2, '0');
-            return `${oDate.getFullYear()}-${pad(oDate.getMonth() + 1)}-${pad(oDate.getDate())}`;
+            if (!oDate) return null;
+
+            // Si ya es string en formato DD.MM.YYYY, devolverlo así
+            if (typeof oDate === 'string' && oDate.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                return oDate;
+            }
+
+            // Si es objeto Date, formatear a DD.MM.YYYY
+            if (oDate instanceof Date) {
+                const day = String(oDate.getDate()).padStart(2, '0');
+                const month = String(oDate.getMonth() + 1).padStart(2, '0');
+                const year = oDate.getFullYear();
+                return `${day}.${month}.${year}`;
+            }
+
+            return null;
+        },
+
+        //Revisa si ya es de tipo DATE,
+        _parseDateString: function (sDate) {
+            if (!sDate) return null;
+
+            // Formato DD.MM.YYYY (09.05.2025)
+            const ddmmyyyyMatch = sDate.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+            if (ddmmyyyyMatch) {
+                const [_, day, month, year] = ddmmyyyyMatch;
+                return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            }
+
+            // Formato ISO o Date existente
+            if (Object.prototype.toString.call(sDate) === "[object Date]") {
+                return sDate;
+            }
+
+            // Intentar parsear como fecha ISO
+            const parsedDate = new Date(sDate);
+            return isNaN(parsedDate.getTime()) ? null : parsedDate;
+        },
+
+
+        onEditCompanySelected: async function (oEvent) {
+            const oSelectedItem = oEvent.getParameter("selectedItem");
+            if (!oSelectedItem) return;
+
+            const sCompanyId = oSelectedItem.getKey();
+            const oView = this.getView();
+            const oEditModel = oView.getModel("editUser");
+
+            // Actualizar el modelo
+            oEditModel.setProperty("/COMPANYID", sCompanyId);
+            oEditModel.setProperty("/DEPARTMENT_ID", ""); // Limpiar departamento al cambiar compañía
+            oEditModel.setProperty("/DEPARTMENT", ""); // Limpiar nombre del departamento
+
+            // Cargar los departamentos de la nueva compañía
+            try {
+                const envRes = await fetch("env.json");
+                const env = await envRes.json();
+
+                const sDeptUrl = `${env.API_VALUES_URL_BASE}getCompanyById?companyid=${encodeURIComponent(sCompanyId)}`;
+                const deptResponse = await fetch(sDeptUrl);
+                const oDeptData = await deptResponse.json();
+
+                if (oDeptData.value) {
+                    const oDeptModel = new JSONModel({
+                        value: oDeptData.value
+                    });
+                    oView.setModel(oDeptModel, "deptosModel");
+                }
+            } catch (error) {
+                console.error("Error al cargar departamentos:", error);
+                MessageToast.show("Error al cargar departamentos");
+            }
         },
 
     });
