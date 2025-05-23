@@ -277,8 +277,8 @@ sap.ui.define([
                         PHONENUMBER: oUserData.PHONENUMBER,
                         BIRTHDAYDATE: oUserData.BIRTHDAYDATE ? this.formatDateToString(oUserData.BIRTHDAYDATE) : null,
                         COMPANYID: oUserData.COMPANYID,
-                        DEPARTMENT: sDepartmentName, // Usar el nombre obtenido
-                        DEPARTMENT_ID: oUserData.DEPARTMENT_ID, // Mantener el ID también si es necesario
+                        DEPARTMENT: sDepartmentName,
+                        DEPARTMENT_ID: oUserData.DEPARTMENT_ID, 
                         FUNCTION: oUserData.FUNCTION,
                         ACTIVO: true,
                         DETAIL_ROW: {
@@ -513,7 +513,7 @@ sap.ui.define([
                         return new sap.ui.model.Filter({
                             path: sField,
                             operator: sap.ui.model.FilterOperator.Contains,
-                            value1: sQueryRaw // usamos sin normalizar aquí porque UI5 compara con texto real
+                            value1: sQueryRaw 
                         });
                     });
 
@@ -532,10 +532,9 @@ sap.ui.define([
                         path: "",
                         test: (oContext) => {
                             const bActive = oContext?.DETAIL_ROW?.ACTIVED;
-                            const sStatus = this._normalizeText(this.formatStatusText(bActive)); // "activo" o "inactivo"
-                            const sNormalizedQuery = this._normalizeText(sQuery); // lo que escribió el usuario
+                            const sStatus = this._normalizeText(this.formatStatusText(bActive)); 
+                            const sNormalizedQuery = this._normalizeText(sQuery);
 
-                            // Coincide si el status comienza con el texto buscado
                             return sStatus.startsWith(sNormalizedQuery);
                         }
                     });
@@ -556,7 +555,7 @@ sap.ui.define([
                         oRolesFilter,
                         oStatusFilter,
                         oDepartmentFilter
-                    ], false); // false = OR lógico
+                    ], false);
 
                     oTable.getBinding("rows").filter(oCombinedFilter);
                 } else {
@@ -634,7 +633,7 @@ sap.ui.define([
                 .then(env => fetch(env.API_VALUES_URL_BASE + "getLabelById?labelid=IdCompanies"))
                 .then(res => res.json())
                 .then(data => {
-                    oModel.setData(data); // { value: [...] }
+                    oModel.setData(data);
                     that.getView().setModel(oModel, "companiesModel");
                     this.loadDeptos();
                 })
@@ -669,7 +668,6 @@ sap.ui.define([
                 })
                 .then(res => res.json())
                 .then(data => {
-                    // Asegurarse de que los datos vienen en el formato esperado
                     if (!data.value && Array.isArray(data)) {
                         data = { value: data };
                     }
@@ -677,17 +675,13 @@ sap.ui.define([
                     oModel.setData(data);
                     that.getView().setModel(oModel, "deptosModel");
 
-                    // Establecer el departamento seleccionado si se proporcionó
                     if (selectedDepto) {
                         const oEditModel = that.getView().getModel("editUser");
                         if (oEditModel) {
-                            // Verificar que el departamento existe en la lista
                             const deptExists = data.value.some(dept => dept.DEPARTMENTID === selectedDepto);
                             if (deptExists) {
                                 oEditModel.setProperty("/DEPARTMENT", selectedDepto);
                                 console.log("🏢 Departamento seleccionado en el modelo editUser:", selectedDepto);
-
-                                // Forzar la selección visual en el combobox
                                 const oDeptoCombo = that.byId("comboBoxEditCedis");
                                 if (oDeptoCombo) {
                                     oDeptoCombo.setSelectedKey(selectedDepto);
@@ -717,12 +711,10 @@ sap.ui.define([
                 .then(env => fetch(env.API_ROLES_URL_BASE + "getall"))
                 .then(res => res.json())
                 .then(data => {
-                    // Filtrar roles únicos por ROLENAME
                     const uniqueRoles = [];
                     const seenNames = new Set();
 
                     data.value.forEach(role => {
-                        // Usar ROLEIDSAP si está disponible, sino ROLENAME, sino ROLEID
                         const roleName = role.ROLEIDSAP || role.ROLENAME || role.ROLEID;
 
                         if (!seenNames.has(roleName)) {
@@ -735,7 +727,6 @@ sap.ui.define([
                         }
                     });
 
-                    // Ordenar alfabéticamente
                     uniqueRoles.sort((a, b) => a.ROLENAME.localeCompare(b.ROLENAME));
 
                     oRolesModel.setData({ roles: uniqueRoles });
@@ -755,14 +746,12 @@ sap.ui.define([
             const oModel = this.getView().getModel("newUser");
             const aSelectedRoles = oModel.getProperty("/selectedRoles") || [];
 
-            // Verificar si el rol ya fue seleccionado (por nombre)
             if (aSelectedRoles.some(role => role.ROLENAME === sSelectedText)) {
                 MessageToast.show("Este rol ya fue seleccionado");
                 oComboBox.setSelectedKey(null);
                 return;
             }
 
-            // Agregar nuevo rol
             aSelectedRoles.push({
                 ROLEID: sSelectedKey,
                 ROLENAME: sSelectedText
@@ -821,11 +810,8 @@ sap.ui.define([
             }
 
             const aRoleNames = aRoles.map(function (oRole) {
-                // Usar ROLEIDSAP si está disponible y no está vacío, si no usar ROLEID
                 return oRole.ROLEIDSAP?.trim() || oRole.ROLEID?.trim() || "";
             }).filter(Boolean); // Eliminar valores vacíos
-
-            // console.log("Estos son los roles:", aRoleNames.join(", "));
 
             return aRoleNames.join(", ");
         },
@@ -836,23 +822,12 @@ sap.ui.define([
 
         resetNewUserModel: function () {
             const oView = this.getView();
-            // Limpiar visualmente los campos ComboBox y DatePicker
-            // oView.byId("comboBoxCompanies").setSelectedKey(null);
             oView.byId("comboBoxCompanies").setValue("");
-
-            // oView.byId("comboBoxCedis").setSelectedKey(null);
             oView.byId("comboBoxCedis").setValue("");
-
-            // oView.byId("comboBoxRoles").setSelectedKey(null);
             oView.byId("comboBoxRoles").setValue("");
-
             oView.byId("inputUserBirthdayDate").setDateValue(null);
-
-            // Limpiar los roles seleccionados del VBox visual
             const rolesVBox = oView.byId("selectedRolesVBox");
             rolesVBox.removeAllItems();
-
-            // También puedes resetear otros campos si lo deseas
             oView.byId("inputUserId").setValue("");
             oView.byId("inputUsername").setValue("");
             oView.byId("inputUserPhoneNumber").setValue("");
@@ -891,14 +866,14 @@ sap.ui.define([
 
             if (!oSelectedItem) { return; }
 
-            const sCompanyId = oSelectedItem.getKey();   // VALUEID
-            const sCompanyName = oSelectedItem.getText(); // VALUE
+            const sCompanyId = oSelectedItem.getKey();   
+            const sCompanyName = oSelectedItem.getText(); 
 
-            // 1. Limpiar ComboBox de CEDIS (departamentos)
+            // 1. Limpiar ComboBox de departamentos
             const oDeptosModel = new sap.ui.model.json.JSONModel({ value: [] });
             oView.setModel(oDeptosModel, "deptosModel");
 
-            // 2. Limpiar selección visual de comboBoxCedis
+            // 2. Limpiar selección visual de departamentos
             const oCedisComboBox = oView.byId("comboBoxCedis");
             // oCedisComboBox.setSelectedKey(null);
             oCedisComboBox.setValue("");
@@ -1026,8 +1001,8 @@ sap.ui.define([
                     PHONENUMBER: oUserData.PHONENUMBER,
                     BIRTHDAYDATE: parsedBirthdayDate,
                     COMPANYID: oUserData.COMPANYID,
-                    DEPARTMENT: oUserData.DEPARTMENT, // Nombre del departamento
-                    DEPARTMENT_ID: "", // Lo estableceremos después
+                    DEPARTMENT: oUserData.DEPARTMENT, 
+                    DEPARTMENT_ID: "",
                     FUNCTION: oUserData.FUNCTION,
                     selectedRoles: oUserData.ROLES || []
                 });
@@ -1147,8 +1122,8 @@ sap.ui.define([
 
             // Actualizar el modelo
             oEditModel.setProperty("/COMPANYID", sCompanyId);
-            oEditModel.setProperty("/DEPARTMENT_ID", ""); // Limpiar departamento al cambiar compañía
-            oEditModel.setProperty("/DEPARTMENT", ""); // Limpiar nombre del departamento
+            oEditModel.setProperty("/DEPARTMENT_ID", ""); 
+            oEditModel.setProperty("/DEPARTMENT", "");
 
             // Cargar los departamentos de la nueva compañía
             try {
