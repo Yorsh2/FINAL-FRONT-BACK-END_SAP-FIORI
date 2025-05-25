@@ -1,492 +1,266 @@
 sap.ui.define([
     "com/invertions/sapfiorimodinv/controller/BaseController",
     "sap/ui/model/json/JSONModel",
+    "sap/ui/Device",
     "sap/m/MessageBox",
     "sap/m/MessageToast",
     "sap/ui/model/Filter",
     "sap/ui/core/Fragment",
     "sap/ui/model/FilterOperator",
     "jquery"
-], function (BaseController, JSONModel, MessageBox, MessageToast, Filter, Fragment, FilterOperator, $) {
+], function (
+    BaseController,
+    JSONModel,
+    Device,
+    MessageBox,
+    MessageToast,
+    Filter,
+    Fragment,
+    FilterOperator,
+    $
+) {
     "use strict";
 
     return BaseController.extend("com.invertions.sapfiorimodinv.controller.catalogs.Values", {
-        // Método de inicialización del controlador
-        onInit: function () {
-            // Modelo para los valores
-            this.getView().setModel(new JSONModel({
-                values: [],
-                selectedValue: null
-            }), "values");
-            this.getView().setModel(new JSONModel({
-                values: [],       // Datos de la tabla
-                selectedValueIn: null  // 🔥 Para controlar los botones
-            }), "values");
 
-            // Modelo para los datos del formulario
-            this.getView().setModel(new JSONModel({
+        onInit: function () {
+            var oView = this.getView();
+            oView.setModel(new JSONModel({
+                values: [],
+                selectedValue: null,
+                selectedValueIn: false
+            }), "values");
+            oView.setModel(new JSONModel({
                 VALUEID: "",
                 VALUE: "",
                 VALUEPAID: "",
                 ALIAS: "",
                 IMAGE: "",
-                DESCRIPTION: ""
+                DESCRIPTION: "",
+                LABELID: "",
+                mode: "CREATE"
             }), "newValueModel");
+            var oDeviceModel = new JSONModel(Device);
+            oDeviceModel.setDefaultBindingMode("OneWay");
+            oView.setModel(oDeviceModel, "device");
+            this.loadValues();
+            this._loadLabels();
         },
-        // Método para cargar los valores en el modelo
-        loadValues: function (aValues) {
-            this.getView().getModel("values").setProperty("/values", aValues || []);
-        },
-        // Método para abrir el diálogo de selección de valores
-        onItemSelect: function (oEvent) {
-            var oItem = oEvent.getParameter("listItem");
-            var oSelectedData = oItem.getBindingContext("values").getObject();
-            // Actualiza el modelo newValueModel con los datos seleccionados
-            this.getView().getModel("newValueModel").setProperty("/", {
-                VALUEID: oSelectedData.VALUEID,
-                VALUE: oSelectedData.VALUE,
-                VALUEPAID: oSelectedData.VALUEPAID,
-                ALIAS: oSelectedData.ALIAS,
-                IMAGE: oSelectedData.IMAGE,
-                DESCRIPTION: oSelectedData.DESCRIPTION
-            });
 
-            // Activa el modo de edición
-            this.getView().getModel("values").setProperty("/selectedValueIn", true);
+        openValueDialog: function () {
+            var oView = this.getView();
+            if (!this._oDialog) {
+                Fragment.load({
+                    id: oView.getId(),
+                    name: "com.invertions.sapfiorimodinv.view.catalogs.fragments.EditValueDialog",
+                    controller: this
+                }).then(function (dlg) {
+                    this._oDialog = dlg;
+                    oView.addDependent(dlg);
+                    dlg.open();
+                }.bind(this));
+            } else {
+                this._oDialog.open();
+            }
         },
-        // Método para esditar el nuevo valor
+
+        onAddValues: function () {
+            this.getView().getModel("newValueModel").setData({
+                VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "",
+                DESCRIPTION: "", LABELID: "", mode: "CREATE"
+            });
+            this.getView().getModel("values").setProperty("/selectedValueIn", false);
+            this.openValueDialog();
+        },
+
         onEditValue: function () {
-            var oView = this.getView();
-            var oNewValueModel = oView.getModel("newValueModel");
-            var oValuesModel = oView.getModel("values");
+            var oSel = this.getView().getModel("values").getProperty("/selectedValue") || {};
+            this.getView().getModel("newValueModel").setData(Object.assign({}, oSel, { mode: "EDIT" }));
+            this.openValueDialog();
+        },
 
-            // Obtener datos del formulario
-            var oFormData = oNewValueModel.getData();
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
+        onItemSelect: function (oEvent) {
+            var oData = oEvent.getParameter("listItem").getBindingContext("values").getObject();
+            var oVals = this.getView().getModel("values");
+            oVals.setProperty("/selectedValue", oData);
+            oVals.setProperty("/selectedValueIn", true);
+        },
 
-            // Validaciones
-            if (!oFormData.VALUEID || !oFormData.VALUE) {
-                MessageToast.show("VALUEID y VALUE son campos obligatorios");
-                return;
-            }
-
-            // Construir objeto con todos los parámetros
-            var oParams = {
-                COMPANYID: 0,
-                CEDIID: 0,
-                LABELID: oSelectedCatalog.LABELID,
-                VALUEPAID: oFormData.VALUEPAID || "",
-                VALUEID: oFormData.VALUEID,
-                VALUE: oFormData.VALUE,
-                ALIAS: oFormData.ALIAS || "",
-                SEQUENCE: 30,
-                IMAGE: oFormData.IMAGE || "",
-                VALUESAPID: "",
-                DESCRIPTION: oFormData.DESCRIPTION || "",
-                ROUTE: "",
-                // Estructura anidada para DETAIL_ROW
-                "DETAIL_ROW": {
-                    "ACTIVED": true,
-                    "DELETED": false
-                },
-                "DETAIL_ROW_REG": [
-
-                ]
-            };
-
-            // Configurar llamada AJAX con GET
+        loadValues: function () {
+            var oView = this.getView(), oModel = oView.getModel("values");
             oView.setBusy(true);
-
             $.ajax({
-                url: `http://localhost:4004/api/sec/valuesCRUD?procedure=put`,
-                data: oParams,
+                url: "http://localhost:3333/api/security/values/getAllValues",
                 method: "GET",
-                success: function (response) {
+                success: function (res) {
+                    var aItems = res.value || res;
+                    oModel.setProperty("/values", aItems);
+                },
+                error: function () {
+                    MessageToast.show("Error al obtener valores");
+                },
+                complete: function () {
                     oView.setBusy(false);
-                    MessageToast.show("Valor guardado correctamente");
-
-                    // Actualizar el modelo directamente
-                    var currentValues = oValuesModel.getProperty("/values") || [];
-                    var updatedIndex = currentValues.findIndex(item => item.VALUEID === oFormData.VALUEID);
-
-                    if (updatedIndex !== -1) {
-                        currentValues[updatedIndex] = {
-                            ...currentValues[updatedIndex],
-                            VALUE: oFormData.VALUE,
-                            VALUEPAID: oFormData.VALUEPAID,
-                            ALIAS: oFormData.ALIAS,
-                            IMAGE: oFormData.IMAGE,
-                            DESCRIPTION: oFormData.DESCRIPTION
-                        };
-                        oValuesModel.setProperty("/values", currentValues);
-                    }
-
-                    // Cerrar diálogo y limpiar
-                    this.onCancelEdit();
-                }.bind(this),
-                error: function (error) {
-                    oView.setBusy(false);
-                    MessageToast.show("Error al guardar: " +
-                        (error.responseJSON?.error?.message || "Error en el servidor"));
                 }
             });
         },
-        // Método para guardar un nuevo valor
+
+        _loadLabels: function () {
+            var oView = this.getView(), oLabelsModel = new JSONModel();
+            oView.setModel(oLabelsModel, "labels");
+            oView.setBusy(true);
+            $.ajax({
+                url: "http://localhost:3333/api/security/label/getAllLabels",
+                method: "GET",
+                success: function (data) {
+                    var aRaw = data.value || data.data || data || [];
+                    var aClean = aRaw.map(function (o) { return { LABELID: o.LABELID || o.labelid || o.LabelID }; });
+                    oLabelsModel.setProperty("/labels", aClean);
+                },
+                error: function () {
+                    MessageToast.show("Error al cargar labels");
+                },
+                complete: function () {
+                    oView.setBusy(false);
+                }
+            });
+        },
+
         onSaveValues: function () {
-            var oView = this.getView();
-            var oNewValueModel = oView.getModel("newValueModel");
-            var oValuesModel = oView.getModel("values");
-
-            // Obtener datos del formulario
-            var oFormData = oNewValueModel.getData();
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
-
-            // Validaciones
-            if (!oFormData.VALUEID || !oFormData.VALUE) {
-                MessageToast.show("VALUEID y VALUE son campos obligatorios");
+            var oView = this.getView(), oForm = oView.getModel("newValueModel").getData();
+            if (!oForm.VALUEID || !oForm.VALUE) {
+                MessageToast.show("VALUEID y VALUE son obligatorios");
                 return;
             }
-
-            // Construir objeto con todos los parámetros
-            var oParams = {
-                COMPANYID: 0,
-                CEDIID: 0,
-                LABELID: oSelectedCatalog.LABELID,
-                VALUEPAID: oFormData.VALUEPAID || "",
-                VALUEID: oFormData.VALUEID,
-                VALUE: oFormData.VALUE,
-                ALIAS: oFormData.ALIAS || "",
-                SEQUENCE: 30,
-                IMAGE: oFormData.IMAGE || "",
-                VALUESAPID: "",
-                DESCRIPTION: oFormData.DESCRIPTION || "",
-                ROUTE: "",
-                // Estructura anidada para DETAIL_ROW
-                "DETAIL_ROW": {
-                    "ACTIVED": true,
-                    "DELETED": false
-                },
-                "DETAIL_ROW_REG": [
-
-                ]
-            };
-
-            // Configurar llamada AJAX con GET
             oView.setBusy(true);
+            var oPayload = Object.assign({}, oForm);
+            delete oPayload.mode; delete oPayload._id; delete oPayload.__v;
 
-            $.ajax({
-                url: `http://localhost:4004/api/sec/valuesCRUD?procedure=post`,
-                data: oParams,
-                method: "GET",
-                success: function (response) {
-                    oView.setBusy(false);
-                    MessageToast.show("Valor guardado correctamente");
-
-                    // Actualizar el modelo directamente
-                    var currentValues = oValuesModel.getProperty("/values") || [];
-                    currentValues.push({
-                        VALUEID: oFormData.VALUEID,
-                        VALUE: oFormData.VALUE,
-                        VALUEPAID: oFormData.VALUEPAID,
-                        ALIAS: oFormData.ALIAS,
-                        IMAGE: oFormData.IMAGE,
-                        DESCRIPTION: oFormData.DESCRIPTION,
-                        DETAIL_ROW: {
-                            ACTIVED: true,
-                            DELETED: false
-                        }
-                    });
-                    oValuesModel.setProperty("/values", currentValues);
-
-                    // Cerrar diálogo y limpiar
-                    this.onCancelValues();
-                }.bind(this),
-                error: function (error) {
-                    oView.setBusy(false);
-                    MessageToast.show("Error al guardar: " +
-                        (error.responseJSON?.error?.message || "Error en el servidor"));
-                }
-            });
-        },
-        //FILTRO DE VALORES
-        onFilterChange: function () {
-            var oTable = this.byId("valuesTable");
-            var oBinding = oTable.getBinding("items");
-            var valueFilterVal = this.byId("ValueSearchField").getValue();
-
-            var aFilters = [];
-            if (valueFilterVal) {
-                aFilters.push(new Filter("VALUEID", FilterOperator.Contains, valueFilterVal));
+            if (oForm.mode === "CREATE") {
+                $.ajax({
+                    url: "http://localhost:3333/api/security/values/view",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ value: oPayload }),
+                    success: function () {
+                        MessageToast.show("Valor creado correctamente"); this.loadValues(); this.onCancelDialog();
+                    }.bind(this),
+                    error: function () {
+                        MessageToast.show("Error al crear valor");
+                    },
+                    complete: function () {
+                        oView.setBusy(false);
+                    }
+                });
+            } else {
+                $.ajax({
+                    url: "http://localhost:3333/api/security/values/updateValue",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ valueid: oForm.VALUEID, value: oPayload }),
+                    success: function () {
+                        MessageToast.show("Valor actualizado correctamente"); this.loadValues(); this.onCancelDialog();
+                    }.bind(this),
+                    error: function () {
+                        MessageToast.show("Error al actualizar valor");
+                    },
+                    complete: function () {
+                        oView.setBusy(false);
+                    }
+                });
             }
+        },
 
+        onFilterChange: function (oEvent) {
+            var sQuery = oEvent.getParameter("newValue"),
+                oTable = this.byId("valuesTable"),
+                oBinding = oTable.getBinding("items"),
+                aFilters = [];
+            if (sQuery) aFilters.push(new Filter("VALUEID", FilterOperator.Contains, sQuery));
             oBinding.filter(aFilters);
         },
 
-        /*_loadValuesByLabel: function(sLabelID) {
-            var oView = this.getView();
-            
-            $.ajax({
-                url: "http://localhost:4004/api/sec/valuesCRUD?procedure=get&labelID=" + encodeURIComponent(sLabelID),
-                method: "GET",
-                success: function(data) {
-                    oView.getModel("values").setProperty("/values", data.value || []);
-                }.bind(this),
-                error: function(error) {
-                    MessageToast.show("Error al cargar valores");
-                    console.error("Error loading values:", error);
-                }
-            });
-        },*/
-        StatusValueDecline: function () {
-            this.StatusValue(false, true, "delete");
-        },
-        StatusValueAccept: function () {
-            this.StatusValue(true, false, "actived");
-        },
-        StatusValue: function (aceptar, rechazar, type) {
-            var oView = this.getView();
-            var oNewValueModel = oView.getModel("newValueModel");
-            var oValuesModel = oView.getModel("values");
+        onActivateValue: function () { this._toggleActive(true); },
+        onDeactivateValue: function () { this._toggleActive(false); },
 
-            // Obtener datos del formulario
-            var oFormData = oNewValueModel.getData();
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
-
-            // Validaciones
-            if (!oFormData.VALUEID || !oFormData.VALUE) {
-                MessageToast.show("VALUEID y VALUE son campos obligatorios");
+        _toggleActive: function (bActivate) {
+            var oSel = this.getView().getModel("values").getProperty("/selectedValue");
+            if (!oSel) {
+                MessageToast.show("Selecciona un valor primero");
                 return;
             }
+            var payload = { valueid: oSel.VALUEID, reguser: oSel.VALUEID };
+            // URL dinámica según activar o desactivar
+            var sUrl = "http://localhost:3333/api/security/values/" + (bActivate ? "activateValue" : "deactivateValue");
 
-            // Construir objeto con todos los parámetros
-            var oParams = {
-                // Estructura anidada para DETAIL_ROW
-                "DETAIL_ROW": {
-                    "ACTIVED": aceptar,
-                    "DELETED": rechazar
+            this.getView().setBusy(true);
+            $.ajax({
+                url: sUrl,
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(payload),
+                success: function () {
+                    MessageToast.show(
+                        bActivate
+                        ? "Valor activado correctamente"
+                        : "Valor desactivado correctamente"
+                    );
+                    this.loadValues();
+                }.bind(this),
+                error: function () {
+                    MessageToast.show(
+                        bActivate
+                        ? "Error al activar valor"
+                        : "Error al desactivar valor"
+                    );
                 },
-            };
-
-            // Configurar llamada AJAX con GET
-            oView.setBusy(true);
-
-            $.ajax({
-                url: `http://localhost:4004/api/sec/valuesCRUD?procedure=${type}&labelID=${oSelectedCatalog.LABELID}&ValueID=${oFormData.VALUEID}`,
-                data: oParams,
-                method: "GET",
-                success: function (response) {
-                    oView.setBusy(false);
-                    if (aceptar == true) {
-                        MessageToast.show("Valor activado correctamente");
-                    } else {
-                        MessageToast.show("Valor desactivado correctamente");
-                    }
-
-                    // Actualizar el modelo directamente
-                    var currentValues = oValuesModel.getProperty("/values") || [];
-                    var updatedIndex = currentValues.findIndex(item => item.VALUEID === oFormData.VALUEID);
-
-                    if (updatedIndex !== -1) {
-                        currentValues[updatedIndex].DETAIL_ROW = {
-                            ACTIVED: aceptar,
-                            DELETED: rechazar
-                        };
-                        oValuesModel.setProperty("/values", currentValues);
-                    }
-                }.bind(this),
-                error: function (error) {
-                    oView.setBusy(false);
-                    MessageToast.show("Error al activar: " +
-                        (error.responseJSON?.error?.message || "Error en el servidor"));
-                }
+                complete: function () {
+                    this.getView().setBusy(false);
+                }.bind(this)
             });
         },
+
         onDeleteValue: function () {
-            var oView = this.getView();
-            var oNewValueModel = oView.getModel("newValueModel");
-            var oValuesModel = oView.getModel("values");
-
-            // Obtener datos del formulario
-            var oFormData = oNewValueModel.getData();
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
-
-            // Validaciones
-            if (!oFormData.VALUEID || !oFormData.VALUE) {
-                MessageToast.show("VALUEID y VALUE son campos obligatorios");
+            var oSel = this.getView().getModel("values").getProperty("/selectedValue");
+            if (!oSel) {
+                MessageToast.show("Selecciona un valor primero");
                 return;
             }
-
-            // 🔥 Mensaje de confirmación antes de eliminar
-            MessageBox.confirm("¿ESTÁS SEGURO DE ELIMINAR PERMANENTEMENTE ESTE DATO?", {
-                title: "Confirmar Eliminación",
-                onClose: function (oAction) {
-                    if (oAction === MessageBox.Action.OK) {
-                        // ✅ Si el usuario presiona "OK", ejecuta la eliminación
-                        oView.setBusy(true);
-
+            var payload = { valueid: oSel.VALUEID };
+            MessageBox.confirm("¿Eliminar valor permanentemente?", {
+                title: "Confirmar eliminación",
+                onClose: function (action) {
+                    if (action === MessageBox.Action.OK) {
+                        this.getView().setBusy(true);
                         $.ajax({
-                            url: `http://localhost:4004/api/sec/valuesCRUD?procedure=deletePermanent&labelID=${oSelectedCatalog.LABELID}&ValueID=${oFormData.VALUEID}`,
-                            method: "GET",
-                            success: function (response) {
-                                oView.setBusy(false);
-                                MessageToast.show("Valor eliminado correctamente");
-
-                                // Actualizar el modelo directamente
-                                var currentValues = oValuesModel.getProperty("/values") || [];
-                                var filteredValues = currentValues.filter(item => item.VALUEID !== oFormData.VALUEID);
-                                oValuesModel.setProperty("/values", filteredValues);
-
-                                this._cleanModels();
+                            url: "http://localhost:3333/api/security/values/deleteview",
+                            method: "POST",
+                            contentType: "application/json",
+                            data: JSON.stringify(payload),
+                            success: function () {
+                                MessageToast.show("Valor eliminado permanentemente");
+                                this.loadValues();
                             }.bind(this),
-                            error: function (error) {
-                                oView.setBusy(false);
-                                MessageToast.show("Error al eliminar: " +
-                                    (error.responseJSON?.error?.message || "Error en el servidor"));
-                            }
+                            error: function () {
+                                MessageToast.show("Error al eliminar valor");
+                            },
+                            complete: function () {
+                                this.getView().setBusy(false);
+                            }.bind(this)
                         });
                     }
                 }.bind(this)
             });
         },
-        onChangeValue: function () {
-            var oView = this.getView();
-            var oValuesModel = oView.getModel("values");
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
-            // Inicializa el modelo con estructura completa
-            var oModel = new JSONModel({
-                COMPANYID: 0,
-                CEDIID: 0,
-                LABELID: oSelectedCatalog.LABELID,
-                VALUEPAID: "",
-                VALUEID: "",
-                VALUE: "",
-                ALIAS: "",
-                SEQUENCE: 30,
-                IMAGE: "",
-                VALUESAPID: "",
-                DESCRIPTION: "",
-                ROUTE: "",
-                // Estructura anidada para DETAIL_ROW
-                "DETAIL_ROW": {
-                    "ACTIVED": true,
-                    "DELETED": false
-                },
-                "DETAIL_ROW_REG": [
 
-                ]
-            });
-
-            this.getView().setModel(oModel, "addValueModel");
-
-            // Cargar el diálogo si no existe
-            if (!this._oEditDialog) {
-                Fragment.load({
-                    id: this.getView().getId(),
-                    name: "com.invertions.sapfiorimodinv.view.catalogs.fragments.EditValueDialog",
-                    controller: this,
-                }).then(
-                    function (oDialog) {
-                        this._oEditDialog = oDialog;
-                        this.getView().addDependent(oDialog);
-                        oDialog.open();
-                    }.bind(this)
-                );
-            } else {
-                this._oEditDialog.open();
+        onCancelDialog: function () {
+            if (this._oDialog) {
+                this._oDialog.close();
             }
-        },
-        onAddValues: function () {
-            var oView = this.getView();
-            var oValuesModel = oView.getModel("values");
-            var oSelectedCatalog = oValuesModel.getProperty("/selectedValue");
-            // Inicializa el modelo con estructura completa
-            var oModel = new JSONModel({
-                COMPANYID: 0,
-                CEDIID: 0,
-                LABELID: oSelectedCatalog.LABELID,
-                VALUEPAID: "",
-                VALUEID: "",
-                VALUE: "",
-                ALIAS: "",
-                SEQUENCE: 30,
-                IMAGE: "",
-                VALUESAPID: "",
-                DESCRIPTION: "",
-                ROUTE: "",
-                // Estructura anidada para DETAIL_ROW
-                "DETAIL_ROW": {
-                    "ACTIVED": true,
-                    "DELETED": false
-                },
-                "DETAIL_ROW_REG": [
-
-                ]
-            });
-
-            this.getView().setModel(oModel, "addValueModel");
-
-            // Cargar el diálogo si no existe
-            if (!this._oAddDialog) {
-                Fragment.load({
-                    id: this.getView().getId(),
-                    name: "com.invertions.sapfiorimodinv.view.catalogs.fragments.AddValueDialog",
-                    controller: this,
-                }).then(
-                    function (oDialog) {
-                        this._oAddDialog = oDialog;
-                        this.getView().addDependent(oDialog);
-                        oDialog.open();
-                    }.bind(this)
-                );
-            } else {
-                this._oAddDialog.open();
-            }
-        },
-        onCancelEdit: function () {
-            if (this._oEditDialog) {
-                this._oEditDialog.close();
-            }
-            this._cleanModels();
-        },
-        onCancelValues: function () {
-            if (this._oAddDialog) {
-                this._oAddDialog.close();
-            }
-            this._cleanModels();
-        },
-        _cleanModels: function () {
-            // Limpiar modelo de valores seleccionados
             this.getView().getModel("newValueModel").setData({
-                VALUEID: "",
-                VALUE: "",
-                VALUEPAID: "",
-                ALIAS: "",
-                IMAGE: "",
-                DESCRIPTION: ""
+                VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "", DESCRIPTION: "", LABELID: "", mode: "CREATE"
             });
-
-            // Limpiar modelo de añadir valores (si existe)
-            if (this.getView().getModel("addValueModel")) {
-                this.getView().getModel("addValueModel").setData({
-                    VALUEID: "",
-                    VALUE: "",
-                    VALUEPAID: "",
-                    ALIAS: "",
-                    IMAGE: "",
-                    DESCRIPTION: ""
-                });
-            }
-
-            // Resetear selección
-            this.getView().getModel("values").setProperty("/selectedValueIn", null);
-
-            // Deseleccionar items en la tabla
-            var oTable = this.byId("valuesTable");
-            if (oTable) {
-                oTable.removeSelections();
-            }
         }
-
 
     });
 });

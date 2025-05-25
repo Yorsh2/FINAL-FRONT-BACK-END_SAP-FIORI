@@ -13,30 +13,27 @@ const valueSchema = new mongoose.Schema({
     // ==============================================
     // ESTRUCTURA PRINCIPAL (sec-values.cds)
     // ==============================================
-    COMPANYID: { type: String, required: true },      // <- sec-values.cds
-    CEDIID: { type: Number, default: 0 },           // <- sec-values.cds
-
-    LABELID: { type: String, required: true },      // <- sec-values.cds (relación con sec-labels.cds)
-    VALUEPAID: { type: String, default: "" },       // <- sec-values.cds
-    VALUEID: { type: String, required: true },      // <- sec-values.cds (identificador único)
-    VALUE: { type: String, required: true },        // <- sec-values.cds
-    ALIAS: { type: String },                        // <- sec-values.cds
-    SEQUENCE: { type: Number, required: true },     // <- sec-values.cds
-    IMAGE: { type: String },                        // <- sec-values.cds
-    // VALUESAPID: { type: String, default: "" },      // <- sec-values.cds
-    DESCRIPTION: { type: String },                  // <- sec-values.cds
+    COMPANYID: { type: String, default: "" },      // Opcional según sec-values.cds
+    LABELID:   { type: String, required: true },     // Relación con sec-labels.cds
+    VALUEID:   { type: String, required: true },     // Identificador único (clave)
+    VALUE:     { type: String, required: true },     // Texto de presentación
+    ALIAS:     { type: String, default: "" },      // Alias corto
+    SEQUENCE:  { type: Number, default: 0 },         // Secuencia (opcional según sec-values.cds)
+    IMAGE:     { type: String, default: "" },      // URL o ruta de imagen
+    DESCRIPTION: { type: String, default: "" },    // Descripción
+    VALUEPAID: { type: String, default: "" },      // Identificador secundario
 
     // ==============================================
     // ESTRUCTURA DE AUDITORÍA (common.cds)
     // ==============================================
-    DETAIL_ROW: {                                           // <- common.cds (AuditDetail)
-        ACTIVED: { type: Boolean, default: true },          // <- common.cds
-        DELETED: { type: Boolean, default: false },         // <- common.cds
-        DETAIL_ROW_REG: [{                                  // <- common.cds (AuditDetailReg)
-            CURRENT: { type: Boolean, required: true },     // <- common.cds
-            REGDATE: { type: Date, required: true },        // <- common.cds
-            REGTIME: { type: Date, required: true },        // <- common.cds
-            REGUSER: { type: String, required: true }       // <- common.cds
+    DETAIL_ROW: {
+        ACTIVED:     { type: Boolean, default: true },
+        DELETED:     { type: Boolean, default: false },
+        DETAIL_ROW_REG: [{
+            CURRENT: { type: Boolean, required: true },
+            REGDATE: { type: Date,    required: true },
+            REGTIME: { type: Date,    required: true },
+            REGUSER: { type: String,  required: true }
         }]
     }
 }, {
@@ -46,7 +43,7 @@ const valueSchema = new mongoose.Schema({
 
 // Índices para optimización
 valueSchema.index({ LABELID: 1, VALUEID: 1 }, { unique: true }); // Índice compuesto único
-valueSchema.index({ VALUE: 1 }); // Índice para búsqueda por nombre de valor
+valueSchema.index({ VALUE: 1 });    // Índice para búsqueda por nombre de valor
 valueSchema.index({ SEQUENCE: 1 }); // Índice para ordenamiento
 
 module.exports = mongoose.model(
