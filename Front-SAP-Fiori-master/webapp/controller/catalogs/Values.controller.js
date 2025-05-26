@@ -127,49 +127,64 @@ sap.ui.define([
         },
 
         onSaveValues: function () {
-            var oView = this.getView(), oForm = oView.getModel("newValueModel").getData();
-            if (!oForm.VALUEID || !oForm.VALUE) {
-                MessageToast.show("VALUEID y VALUE son obligatorios");
-                return;
-            }
-            oView.setBusy(true);
-            var oPayload = Object.assign({}, oForm);
-            delete oPayload.mode; delete oPayload._id; delete oPayload.__v;
+    var oView = this.getView(), oForm = oView.getModel("newValueModel").getData();
 
-            if (oForm.mode === "CREATE") {
-                $.ajax({
-                    url: "http://localhost:3333/api/security/values/view",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({ value: oPayload }),
-                    success: function () {
-                        MessageToast.show("Valor creado correctamente"); this.loadValues(); this.onCancelDialog();
-                    }.bind(this),
-                    error: function () {
-                        MessageToast.show("Error al crear valor");
-                    },
-                    complete: function () {
-                        oView.setBusy(false);
-                    }
-                });
-            } else {
-                $.ajax({
-                    url: "http://localhost:3333/api/security/values/updateValue",
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify({ valueid: oForm.VALUEID, value: oPayload }),
-                    success: function () {
-                        MessageToast.show("Valor actualizado correctamente"); this.loadValues(); this.onCancelDialog();
-                    }.bind(this),
-                    error: function () {
-                        MessageToast.show("Error al actualizar valor");
-                    },
-                    complete: function () {
-                        oView.setBusy(false);
-                    }
-                });
+    if (!oForm.VALUEID || !oForm.VALUE) {
+        MessageToast.show("VALUEID y VALUE son obligatorios");
+        return;
+    }
+
+    oView.setBusy(true);
+
+    // Campos permitidos según tu modelo CDS
+    var allowedFields = ["VALUEID", "VALUE", "VALUEPAID", "ALIAS", "IMAGE", "DESCRIPTION", "LABELID"];
+
+    // Filtrar oForm para solo enviar los campos permitidos (sin CEDIID ni otros extras)
+    var oPayload = {};
+    allowedFields.forEach(function(field) {
+        if (oForm[field] !== undefined) {
+            oPayload[field] = oForm[field];
+        }
+    });
+
+    if (oForm.mode === "CREATE") {
+        $.ajax({
+            url: "http://localhost:3333/api/security/values/view",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ value: oPayload }),
+            success: function () {
+                MessageToast.show("Valor creado correctamente");
+                this.loadValues();
+                this.onCancelDialog();
+            }.bind(this),
+            error: function () {
+                MessageToast.show("Error al crear valor");
+            },
+            complete: function () {
+                oView.setBusy(false);
             }
-        },
+        });
+    } else {
+        $.ajax({
+            url: "http://localhost:3333/api/security/values/updateValue",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ valueid: oForm.VALUEID, value: oPayload }),
+            success: function () {
+                MessageToast.show("Valor actualizado correctamente");
+                this.loadValues();
+                this.onCancelDialog();
+            }.bind(this),
+            error: function () {
+                MessageToast.show("Error al actualizar valor");
+            },
+            complete: function () {
+                oView.setBusy(false);
+            }
+        });
+    }
+},
 
         onFilterChange: function (oEvent) {
             var sQuery = oEvent.getParameter("newValue"),
