@@ -19,7 +19,11 @@ sap.ui.define([
 
     onGoToUsers: function () {
       this.getOwnerComponent().getRouter().navTo("RouteUsersList");
-    }
+    },
+    
+    onGoToCatalogs: function(){
+      this.getOwnerComponent().getRouter().navTo("RouteCatalogs");
+    },
 
   });
 });

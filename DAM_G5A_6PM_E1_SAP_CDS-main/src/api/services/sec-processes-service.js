@@ -4,19 +4,26 @@ const ZTLabels = require('../models/mongodb/security/ztlabels');
 async function GetAllLabels(req) {
     try {
         const { labelid, active, section } = req.req.query;
-        const filter = { 'DETAIL_ROW.DELETED': false };
+        const filter = {};
 
         if (labelid) filter.LABELID = labelid;
         if (active !== undefined) filter['DETAIL_ROW.ACTIVED'] = active === 'true';
         if (section) filter.SECTION = section;
 
-        return await ZTLabels.find(filter)
+        // console.log("Filtro aplicado:", filter);
+
+        const result = await ZTLabels.find(filter)
             .select('-DETAIL_ROW.DETAIL_ROW_REG')
             .lean();
+
+        // console.log("Número de resultados:", result.length);
+
+        return result;
     } catch (error) {
         throw new Error(`Error al obtener etiquetas: ${error.message}`);
     }
 }
+
 
 // Obtener una etiqueta por ID
 async function GetLabelById(req) {

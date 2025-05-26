@@ -68,20 +68,17 @@ async function view(req) {
 }
 
 async function UpdateValue(req) {
-  try {
-    const { valueid, value } = req.data;
-    if (!valueid) throw new Error('El parámetro "valueid" es requerido');
-    if (!await Values.findOne({ VALUEID: valueid })) throw new Error(`El valor con ID "${valueid}" no existe.`);
-    const updated = await Values.findOneAndUpdate(
-      { VALUEID: valueid },
-      { $set: value },
-      { new:true }
-    ).lean();
-    return updated;
-  } catch (e) {
-    throw new Error(`Error al actualizar valor: ${e.message}`);
-  }
+  const { valueid, value } = req.data;
+  if (!valueid) throw new Error('El parámetro "valueid" es requerido');
+  if (!await Values.findOne({ VALUEID: valueid })) throw new Error(`El valor con ID "${valueid}" no existe.`);
+  const updated = await Values.findOneAndUpdate(
+    { VALUEID: valueid },
+    { $set: value },
+    { new:true }
+  ).lean();
+  return updated;
 }
+
 
 async function DeactivateValue(req) {
   try {
