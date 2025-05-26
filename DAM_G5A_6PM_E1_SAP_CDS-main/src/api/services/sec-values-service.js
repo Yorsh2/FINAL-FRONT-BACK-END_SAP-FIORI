@@ -53,19 +53,25 @@ async function view(req) {
   try {
     const { value } = req.data;
     if (!value || !value.VALUEID) throw new Error('Datos de valor incompletos');
-    if (await Values.findOne({ VALUEID: value.VALUEID })) throw new Error('El VALUEID ya está registrado');
-    const audit = { CURRENT:true, REGDATE:new Date(), REGTIME:new Date(), REGUSER:value.VALUEID };
-    const toCreate = { 
-      ...value, 
-      DETAIL_ROW:{ ACTIVED:true, DELETED:false, DETAIL_ROW_REG:[audit] } 
+
+    const existing = await Values.findOne({ VALUEID: value.VALUEID });
+    if (existing) throw new Error('El VALUEID ya está registrado');
+
+    const audit = { CURRENT: true, REGDATE: new Date(), REGTIME: new Date(), REGUSER: value.VALUEID };
+    const toCreate = {
+      ...value,
+      DETAIL_ROW: { ACTIVED: true, DELETED: false, DETAIL_ROW_REG: [audit] }
     };
-    const [created] = await Values.insertMany([toCreate], { ordered:true });
+
+    const [created] = await Values.insertMany([toCreate], { ordered: true });
+
     return created.toObject();
   } catch (e) {
     if (e.code === 11000) e.message = 'El VALUEID ya existe';
     throw new Error(`Error al crear valor: ${e.message}`);
   }
 }
+
 
 async function UpdateValue(req) {
   const { valueid, value } = req.data;
