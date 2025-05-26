@@ -74,8 +74,7 @@ sap.ui.define([
             var oModel = this.getView().getModel("newUser");
 
             const {
-                USERID, USERNAME, EMAIL, PHONENUMBER,
-                BIRTHDAYDATE, COMPANYID, DEPARTMENT, FUNCTION
+                USERID, USERNAME, EMAIL, PHONENUMBER, BIRTHDAYDATE, COMPANYID, DEPARTMENT, FUNCTION
             } = oNewUser;
 
             // Validación de campos obligatorios
@@ -95,16 +94,11 @@ sap.ui.define([
             const now = new Date();
             const payload = {
                 user: {
-                    USERID,
-                    USERNAME,
+                    USERID, USERNAME,
                     FIRSTNAME: USERNAME,
-                    LASTNAME: "",
-                    EMAIL,
-                    PHONENUMBER,
+                    LASTNAME: "", EMAIL, PHONENUMBER,
                     BIRTHDAYDATE: BIRTHDAYDATE ? this.formatDateToString(BIRTHDAYDATE) : null,
-                    COMPANYID,
-                    DEPARTMENT,
-                    FUNCTION,
+                    COMPANYID, DEPARTMENT, FUNCTION,
                     ACTIVO: true,
                     DETAIL_ROW: {
                         DETAIL_ROW_REG: [{

@@ -24,12 +24,12 @@
                 type="Emphasized"
                 icon="sap-icon://add"
                 press=".onAddValues"
-                enabled="{= !!${values>/selectedValue}}"
+                enabled="{= ${labels>/selectedLabelId} !== '' }"
             />
         <Button
             text="Editar"
             icon="sap-icon://edit"
-            press=".onChangeValue"
+            press=".onEditValue"
             enabled="{= !!${values>/selectedValueIn}}"
         />
         <Button

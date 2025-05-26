@@ -1,74 +1,51 @@
-<Dialog
-    id="valueDialog"
+<core:FragmentDefinition
     xmlns="sap.m"
     xmlns:core="sap.ui.core"
-    title="Editar / Agregar Value"
-    class="sapUiSizeCompact"
-    contentWidth="800px"
-    stretch="{= ${device>/system/phone}}"
-    afterClose=".onCancelDialog">
+    xmlns:form="sap.ui.layout.form">
+    
+    <Dialog
+        id="editDialogValue"
+        title="Editar Value"
+        contentWidth="600px">
+        
+        <content>
+            <form:SimpleForm editable="true">
+            <Label text="LABELID" required="true"/>
+        <Text text="{values>/selectedValue/LABELID}" />
+        
+         <Label text="VALUEID" required="true"/>
+        <Input value="{newValueModel>/VALUEID}"  id="InputValueIdEdit" editable="false"/>
 
-  <content>
-    <VBox class="sapUiSmallMargin" width="100%">
+        <Label text="VALUE" required="true"/>
+        <Input value="{newValueModel>/VALUE}" />
 
-      <Label text="LABELID:*" labelFor="labelCombo"/>
-      <ComboBox
-          id="labelCombo"
-          width="100%"
-          placeholder="Selecciona un Label ID"
-          selectedKey="{newValueModel>/LABELID}"
-          items="{path: 'labels>/labels', templateShareable: false}">
-        <core:Item key="{labels>LABELID}" text="{labels>LABELID}"/>
-      </ComboBox>
+        <Label text="VALUEPAID" />
+        <Input value="{newValueModel>/VALUEPAID}" />
 
-      <Label text="VALUEID:*" labelFor="valueIdInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="valueIdInput"
-          width="100%"
-          value="{newValueModel>/VALUEID}"
-          editable="{= ${newValueModel>/mode} === 'CREATE'}"
-          placeholder="Ingrese VALUEID"/>
+        <Label text="ALIAS" />
+        <Input value="{newValueModel>/ALIAS}" />
 
-      <Label text="VALUE:*" labelFor="valueInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="valueInput"
-          width="100%"
-          value="{newValueModel>/VALUE}"
-          placeholder="Ingrese VALUE"/>
+        <Label text="IMAGE" />
+        <Input value="{newValueModel>/IMAGE}" />
 
-      <Label text="VALUEPAID" labelFor="valuePaidInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="valuePaidInput"
-          width="100%"
-          value="{newValueModel>/VALUEPAID}"
-          placeholder="Ingrese VALUEPAID"/>
-
-      <Label text="ALIAS" labelFor="aliasInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="aliasInput"
-          width="100%"
-          value="{newValueModel>/ALIAS}"
-          placeholder="Ingrese ALIAS"/>
-
-      <Label text="IMAGE" labelFor="imageInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="imageInput"
-          width="100%"
-          value="{newValueModel>/IMAGE}"
-          placeholder="Ingrese IMAGE"/>
-
-      <Label text="DESCRIPTION" labelFor="descriptionInput" class="sapUiSmallMarginTop"/>
-      <Input
-          id="descriptionInput"
-          width="100%"
-          value="{newValueModel>/DESCRIPTION}"
-          placeholder="Ingrese DESCRIPTION"/>
-
-    </VBox>
-  </content>
-
-  <buttons>
-    <Button text="Guardar" press=".onSaveValues" type="Emphasized"/>
-    <Button text="Cancelar" press=".onCancelDialog"/>
-  </buttons>
-</Dialog>
+        <Label text="DESCRIPTION" />
+        <TextArea value="{newValueModel>/DESCRIPTION}" rows="3"/>
+                
+                <!-- Agrega más campos según necesites -->
+            </form:SimpleForm>
+        </content>
+        
+        <beginButton>
+            <Button 
+                text="Guardar" 
+                type="Emphasized" 
+                press="onEditValue"/>
+        </beginButton>
+        
+        <endButton>
+            <Button 
+                text="Cancelar" 
+                press="onCancelEdit"/>
+        </endButton>
+    </Dialog>
+</core:FragmentDefinition>

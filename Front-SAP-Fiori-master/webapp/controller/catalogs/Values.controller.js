@@ -44,15 +44,15 @@ sap.ui.define([
             oDeviceModel.setDefaultBindingMode("OneWay");
             oView.setModel(oDeviceModel, "device");
             this.loadValues();
-            this._loadLabels();
+            // this._loadLabels();
         },
 
-        openValueDialog: function () {
+        openValueDialog: function (ruta) {
             var oView = this.getView();
             if (!this._oDialog) {
                 Fragment.load({
                     id: oView.getId(),
-                    name: "com.invertions.sapfiorimodinv.view.catalogs.fragments.EditValueDialog",
+                    name: "com.invertions.sapfiorimodinv.view.catalogs.fragments."+ruta,
                     controller: this
                 }).then(function (dlg) {
                     this._oDialog = dlg;
@@ -70,13 +70,13 @@ sap.ui.define([
                 DESCRIPTION: "", LABELID: "", mode: "CREATE"
             });
             this.getView().getModel("values").setProperty("/selectedValueIn", false);
-            this.openValueDialog();
+            this.openValueDialog("AddValueDialog");
         },
 
         onEditValue: function () {
             var oSel = this.getView().getModel("values").getProperty("/selectedValue") || {};
             this.getView().getModel("newValueModel").setData(Object.assign({}, oSel, { mode: "EDIT" }));
-            this.openValueDialog();
+            this.openValueDialog("EditValueDialog");
         },
 
         onItemSelect: function (oEvent) {
@@ -127,64 +127,64 @@ sap.ui.define([
         },
 
         onSaveValues: function () {
-    var oView = this.getView(), oForm = oView.getModel("newValueModel").getData();
+            var oView = this.getView(), oForm = oView.getModel("newValueModel").getData();
 
-    if (!oForm.VALUEID || !oForm.VALUE) {
-        MessageToast.show("VALUEID y VALUE son obligatorios");
-        return;
-    }
-
-    oView.setBusy(true);
-
-    // Campos permitidos según tu modelo CDS
-    var allowedFields = ["VALUEID", "VALUE", "VALUEPAID", "ALIAS", "IMAGE", "DESCRIPTION", "LABELID"];
-
-    // Filtrar oForm para solo enviar los campos permitidos (sin CEDIID ni otros extras)
-    var oPayload = {};
-    allowedFields.forEach(function(field) {
-        if (oForm[field] !== undefined) {
-            oPayload[field] = oForm[field];
-        }
-    });
-
-    if (oForm.mode === "CREATE") {
-        $.ajax({
-            url: "http://localhost:3333/api/security/values/view",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ value: oPayload }),
-            success: function () {
-                MessageToast.show("Valor creado correctamente");
-                this.loadValues();
-                this.onCancelDialog();
-            }.bind(this),
-            error: function () {
-                MessageToast.show("Error al crear valor");
-            },
-            complete: function () {
-                oView.setBusy(false);
+            if (!oForm.VALUEID || !oForm.VALUE) {
+                MessageToast.show("VALUEID y VALUE son obligatorios");
+                return;
             }
-        });
-    } else {
-        $.ajax({
-            url: "http://localhost:3333/api/security/values/updateValue",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ valueid: oForm.VALUEID, value: oPayload }),
-            success: function () {
-                MessageToast.show("Valor actualizado correctamente");
-                this.loadValues();
-                this.onCancelDialog();
-            }.bind(this),
-            error: function () {
-                MessageToast.show("Error al actualizar valor");
-            },
-            complete: function () {
-                oView.setBusy(false);
+
+            oView.setBusy(true);
+
+            // Campos permitidos según tu modelo CDS
+            var allowedFields = ["VALUEID", "VALUE", "VALUEPAID", "ALIAS", "IMAGE", "DESCRIPTION", "LABELID"];
+
+            // Filtrar oForm para solo enviar los campos permitidos (sin CEDIID ni otros extras)
+            var oPayload = {};
+            allowedFields.forEach(function (field) {
+                if (oForm[field] !== undefined) {
+                    oPayload[field] = oForm[field];
+                }
+            });
+
+            if (oForm.mode === "CREATE") {
+                $.ajax({
+                    url: "http://localhost:3333/api/security/values/view",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ value: oPayload }),
+                    success: function () {
+                        MessageToast.show("Valor creado correctamente");
+                        this.loadValues();
+                        this.onCancelDialog();
+                    }.bind(this),
+                    error: function () {
+                        MessageToast.show("Error al crear valor");
+                    },
+                    complete: function () {
+                        oView.setBusy(false);
+                    }
+                });
+            } else {
+                $.ajax({
+                    url: "http://localhost:3333/api/security/values/updateValue",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({ valueid: oForm.VALUEID, value: oPayload }),
+                    success: function () {
+                        MessageToast.show("Valor actualizado correctamente");
+                        this.loadValues();
+                        this.onCancelDialog();
+                    }.bind(this),
+                    error: function () {
+                        MessageToast.show("Error al actualizar valor");
+                    },
+                    complete: function () {
+                        oView.setBusy(false);
+                    }
+                });
             }
-        });
-    }
-},
+        },
 
         onFilterChange: function (oEvent) {
             var sQuery = oEvent.getParameter("newValue"),
@@ -217,16 +217,16 @@ sap.ui.define([
                 success: function () {
                     MessageToast.show(
                         bActivate
-                        ? "Valor activado correctamente"
-                        : "Valor desactivado correctamente"
+                            ? "Valor activado correctamente"
+                            : "Valor desactivado correctamente"
                     );
                     this.loadValues();
                 }.bind(this),
                 error: function () {
                     MessageToast.show(
                         bActivate
-                        ? "Error al activar valor"
-                        : "Error al desactivar valor"
+                            ? "Error al activar valor"
+                            : "Error al desactivar valor"
                     );
                 },
                 complete: function () {

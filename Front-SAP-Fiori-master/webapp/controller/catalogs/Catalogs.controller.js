@@ -32,6 +32,7 @@ sap.ui.define(
             if (!res.ok) throw new Error("Error cargando labels");
 
             const data = await res.json();
+            console.log(data);
             oModel.setData({ value: data.value });
           } catch (error) {
             MessageToast.show("Error al cargar labels: " + error.message);
@@ -411,61 +412,61 @@ sap.ui.define(
           }
         },
 
-       onSelectionChange: function (oEvent) {
-            var oTable = oEvent.getSource();
-            var oSelectedItem = oTable.getSelectedItem();
+        onSelectionChange: function (oEvent) {
+          var oTable = oEvent.getSource();
+          var oSelectedItem = oTable.getSelectedItem();
 
-            this._oSelectedItem = oSelectedItem;
+          this._oSelectedItem = oSelectedItem;
 
-            var oContext = oSelectedItem ? oSelectedItem.getBindingContext() : null;
-            var oData = oContext ? oContext.getObject() : null;
+          var oContext = oSelectedItem ? oSelectedItem.getBindingContext() : null;
+          var oData = oContext ? oContext.getObject() : null;
 
-            var oEditButton = this.byId("editButton");
-            var oActivateButton = this.byId("activateButton");
-            var oDeactivateButton = this.byId("deactivateButton");
-            var oDeleteButton = this.byId("deleteButton");
+          var oEditButton = this.byId("editButton");
+          var oActivateButton = this.byId("activateButton");
+          var oDeactivateButton = this.byId("deactivateButton");
+          var oDeleteButton = this.byId("deleteButton");
 
-            if (oData) {
-              oEditButton.setEnabled(true);
-              oDeleteButton.setEnabled(true);
+          if (oData) {
+            oEditButton.setEnabled(true);
+            oDeleteButton.setEnabled(true);
 
-              var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
+            var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
 
-              oActivateButton.setVisible(!bActive);
-              oActivateButton.setEnabled(!bActive);
+            oActivateButton.setVisible(!bActive);
+            oActivateButton.setEnabled(!bActive);
 
-              oDeactivateButton.setVisible(bActive);
-              oDeactivateButton.setEnabled(bActive);
+            oDeactivateButton.setVisible(bActive);
+            oDeactivateButton.setEnabled(bActive);
 
-              // 🚨 Cargar los valores correspondientes a este LABELID
-              this.loadValuesByLabelId(oData.LABELID);
+            // 🚨 Cargar los valores correspondientes a este LABELID
+            this.loadValuesByLabelId(oData.LABELID);
 
-              // 🔥 Opcional: Abrir el panel derecho (si está colapsado)
-              this.getView().byId("mainSplitter").getContentAreas()[1].setLayoutData(
-                new sap.ui.layout.SplitterLayoutData({ size: "40%" })
-              );
+            // 🔥 Opcional: Abrir el panel derecho (si está colapsado)
+            this.getView().byId("mainSplitter").getContentAreas()[1].setLayoutData(
+              new sap.ui.layout.SplitterLayoutData({ size: "40%" })
+            );
 
-            } else {
-              oEditButton.setEnabled(false);
-              oActivateButton.setEnabled(false);
-              oActivateButton.setVisible(true);
-              oDeactivateButton.setEnabled(false);
-              oDeactivateButton.setVisible(false);
-              oDeleteButton.setEnabled(false);
-            }
-          },
+          } else {
+            oEditButton.setEnabled(false);
+            oActivateButton.setEnabled(false);
+            oActivateButton.setVisible(true);
+            oDeactivateButton.setEnabled(false);
+            oDeactivateButton.setVisible(false);
+            oDeleteButton.setEnabled(false);
+          }
+        },
 
-          onItemSelect: function (oEvent) {
-            var oSelectedItem = oEvent.getParameter("listItem");
-            var oContext = oSelectedItem.getBindingContext("values");
-            var oSelectedData = oContext.getObject();
+        onItemSelect: function (oEvent) {
+          var oSelectedItem = oEvent.getParameter("listItem");
+          var oContext = oSelectedItem.getBindingContext("values");
+          var oSelectedData = oContext.getObject();
 
-            var oValuesModel = oContext.getModel();
-            oValuesModel.setProperty("/selectedValueIn", true);
-            oValuesModel.setProperty("/selectedValue", oSelectedData);
-          },
+          var oValuesModel = oContext.getModel();
+          oValuesModel.setProperty("/selectedValueIn", true);
+          oValuesModel.setProperty("/selectedValue", oSelectedData);
+        },
 
-         onCloseDetailPanel: function () {
+        onCloseDetailPanel: function () {
           var oSplitter = this.byId("mainSplitter");
           var oDetailPanel = this.byId("detailPanel");
           var oLayoutData = oDetailPanel.getLayoutData();
