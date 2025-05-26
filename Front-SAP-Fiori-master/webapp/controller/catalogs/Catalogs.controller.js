@@ -465,6 +465,47 @@ sap.ui.define(
             oValuesModel.setProperty("/selectedValue", oSelectedData);
           },
 
+         onCloseDetailPanel: function () {
+          var oSplitter = this.byId("mainSplitter");
+          var oDetailPanel = this.byId("detailPanel");
+          var oLayoutData = oDetailPanel.getLayoutData();
+          if (oLayoutData) {
+            oLayoutData.setSize("0px");
+          }
+          var oLeftPanel = oSplitter.getContentAreas()[0];
+          var oLeftLayoutData = oLeftPanel.getLayoutData();
+          if (oLeftLayoutData) {
+            oLeftLayoutData.setSize("100%");
+          }
+        },
+
+        onCenterDetailPanel: function () {
+          var oSplitter = this.byId("mainSplitter");
+          var oDetailPanel = this.byId("detailPanel");
+          var oLayoutData = oDetailPanel.getLayoutData();
+          if (oLayoutData) {
+            oLayoutData.setSize("50%");
+          }
+          var oLeftPanel = oSplitter.getContentAreas()[0];
+          var oLeftLayoutData = oLeftPanel.getLayoutData();
+          if (oLeftLayoutData) {
+            oLeftLayoutData.setSize("50%");
+          }
+        },
+
+        onExpandDetailPanel: function () {
+          var oSplitter = this.byId("mainSplitter");
+          var oDetailPanel = this.byId("detailPanel");
+          var oLayoutData = oDetailPanel.getLayoutData();
+          if (oLayoutData) {
+            oLayoutData.setSize("100%");
+          }
+          var oLeftPanel = oSplitter.getContentAreas()[0];
+          var oLeftLayoutData = oLeftPanel.getLayoutData();
+          if (oLeftLayoutData) {
+            oLeftLayoutData.setSize("0px");
+          }
+        },
 
       }
     );
