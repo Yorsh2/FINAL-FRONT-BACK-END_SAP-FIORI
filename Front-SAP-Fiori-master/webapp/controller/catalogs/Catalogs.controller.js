@@ -387,44 +387,85 @@ sap.ui.define(
           }
         },
 
-        onSelectionChange: function (oEvent) {
-          var oTable = oEvent.getSource();
-          var oSelectedItem = oTable.getSelectedItem();
+        loadValuesByLabelId: async function (labelId) {
+          try {
+            const envRes = await fetch("env.json");
+            const env = await envRes.json();
 
-          this._oSelectedItem = oSelectedItem;
+            const url = `${env.API_VALUES_URL_BASE}getLabelById?labelid=${encodeURIComponent(labelId)}`;
 
-          var oContext = oSelectedItem ? oSelectedItem.getBindingContext() : null;
-          var oData = oContext ? oContext.getObject() : null;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("Error cargando valores para LABELID " + labelId);
 
-          var oEditButton = this.byId("editButton");
-          var oActivateButton = this.byId("activateButton");
-          var oDeactivateButton = this.byId("deactivateButton");
-          var oDeleteButton = this.byId("deleteButton");
+            const data = await res.json();
 
-          if (oData) {
-            oEditButton.setEnabled(true);
-            oDeleteButton.setEnabled(true);
+            const oValuesModel = new JSONModel({
+              values: data.value || [],
+              selectedValueIn: false
+            });
 
-            var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
+            this.getView().byId("XMLViewValues").setModel(oValuesModel, "values");
 
-            oActivateButton.setVisible(!bActive);
-            oActivateButton.setEnabled(!bActive);
-
-            oDeactivateButton.setVisible(bActive);
-            oDeactivateButton.setEnabled(bActive);
-          } else {
-            oEditButton.setEnabled(false);
-            oActivateButton.setEnabled(false);
-            oActivateButton.setVisible(true);
-            oDeactivateButton.setEnabled(false);
-            oDeactivateButton.setVisible(false);
-            oDeleteButton.setEnabled(false);
+          } catch (error) {
+            MessageToast.show("Error al cargar valores: " + error.message);
           }
         },
 
-        _refreshCatalogTable: function () {
-          this.loadLabels();
-        },
+       onSelectionChange: function (oEvent) {
+            var oTable = oEvent.getSource();
+            var oSelectedItem = oTable.getSelectedItem();
+
+            this._oSelectedItem = oSelectedItem;
+
+            var oContext = oSelectedItem ? oSelectedItem.getBindingContext() : null;
+            var oData = oContext ? oContext.getObject() : null;
+
+            var oEditButton = this.byId("editButton");
+            var oActivateButton = this.byId("activateButton");
+            var oDeactivateButton = this.byId("deactivateButton");
+            var oDeleteButton = this.byId("deleteButton");
+
+            if (oData) {
+              oEditButton.setEnabled(true);
+              oDeleteButton.setEnabled(true);
+
+              var bActive = oData.DETAIL_ROW && oData.DETAIL_ROW.ACTIVED;
+
+              oActivateButton.setVisible(!bActive);
+              oActivateButton.setEnabled(!bActive);
+
+              oDeactivateButton.setVisible(bActive);
+              oDeactivateButton.setEnabled(bActive);
+
+              // 🚨 Cargar los valores correspondientes a este LABELID
+              this.loadValuesByLabelId(oData.LABELID);
+
+              // 🔥 Opcional: Abrir el panel derecho (si está colapsado)
+              this.getView().byId("mainSplitter").getContentAreas()[1].setLayoutData(
+                new sap.ui.layout.SplitterLayoutData({ size: "40%" })
+              );
+
+            } else {
+              oEditButton.setEnabled(false);
+              oActivateButton.setEnabled(false);
+              oActivateButton.setVisible(true);
+              oDeactivateButton.setEnabled(false);
+              oDeactivateButton.setVisible(false);
+              oDeleteButton.setEnabled(false);
+            }
+          },
+
+          onItemSelect: function (oEvent) {
+            var oSelectedItem = oEvent.getParameter("listItem");
+            var oContext = oSelectedItem.getBindingContext("values");
+            var oSelectedData = oContext.getObject();
+
+            var oValuesModel = oContext.getModel();
+            oValuesModel.setProperty("/selectedValueIn", true);
+            oValuesModel.setProperty("/selectedValue", oSelectedData);
+          },
+
+
       }
     );
   }
