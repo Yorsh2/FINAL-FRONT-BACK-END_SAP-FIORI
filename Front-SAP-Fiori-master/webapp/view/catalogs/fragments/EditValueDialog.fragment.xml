@@ -89,14 +89,14 @@
             <Button
                 text="Guardar"
                 type="Emphasized"
-                press="onEditValue"
+                press=".onSaveValues"
             />
         </beginButton>
 
         <endButton>
             <Button
                 text="Cancelar"
-                press="onCancelEdit"
+                press="onEditCancelValue"
             />
         </endButton>
     </Dialog>

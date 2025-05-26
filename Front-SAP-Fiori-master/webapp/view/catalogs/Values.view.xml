@@ -20,12 +20,12 @@
             liveChange="onFilterChange"
         />
         <Button
-                text="Agregar"
-                type="Emphasized"
-                icon="sap-icon://add"
-                press=".onAddValues"
-                enabled="{= ${labels>/selectedLabelId} !== '' }"
-            />
+            text="Agregar"
+            type="Emphasized"
+            icon="sap-icon://add"
+            press=".onAddValues"
+            enabled="{= ${labels>/selectedLabelId} !== '' }"
+        />
         <Button
             text="Editar"
             icon="sap-icon://edit"
@@ -35,14 +35,14 @@
         <Button
             text="Activar"
             icon="sap-icon://accept"
-            press=".StatusValueAccept"
+            press=".onActivateValue"
             enabled="{= !!${values>/selectedValueIn}}"
         />
         <Button
             text="Desactivar"
             icon="sap-icon://decline"
             type="Reject"
-            press=".StatusValueDecline"
+            press=".onDeactivateValue"
             enabled="{= !!${values>/selectedValueIn}}"
         />
         <Button
