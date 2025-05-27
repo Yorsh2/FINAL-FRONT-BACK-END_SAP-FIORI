@@ -15,7 +15,9 @@ sap.ui.define([
     },
 
     onLoginPress: async function () {
-      const oLogin = this.getView().getModel("loginModel").getData();
+      this.getOwnerComponent().getRouter().navTo("Main");
+      // const oLogin = this.getView().getModel("loginModel").getData(); 
+      
 
 /*       try {
         const response = await fetch("http://localhost:4004/api/sec/usersCRUD?procedure=getall", {

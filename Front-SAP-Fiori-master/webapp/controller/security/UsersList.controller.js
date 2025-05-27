@@ -22,6 +22,51 @@ sap.ui.define([
             this.loadUsers();
         },
 
+        prepareUserPayload: function (userData, aSelectedRoles, isEdit = false) {
+            const now = new Date();
+            const payload = {
+                user: {
+                    USERID: userData.USERID,
+                    PASSWORD: isEdit && userData.PASSWORD === "******" ? undefined : userData.PASSWORD,
+                    ALIAS: userData.ALIAS,
+                    FIRSTNAME: userData.FIRSTNAME,
+                    LASTNAME: userData.LASTNAME,
+                    EMPLOYEEID: userData.EMPLOYEEID,
+                    EXTENSION: userData.EXTENSION,
+                    USERNAME: userData.USERNAME,
+                    EMAIL: userData.EMAIL,
+                    PHONENUMBER: userData.PHONENUMBER,
+                    BIRTHDAYDATE: userData.BIRTHDAYDATE ? this.formatDateToString(userData.BIRTHDAYDATE) : null,
+                    AVATAR: userData.AVATAR,
+                    COMPANYID: userData.COMPANYID,
+                    DEPARTMENT: userData.DEPARTMENT,
+                    DEPARTMENT_ID: userData.DEPARTMENT_ID,
+                    FUNCTION: userData.FUNCTION,
+                    STREET: userData.STREET,
+                    POSTALCODE: userData.POSTALCODE,
+                    CITY: userData.CITY,
+                    REGION: userData.REGION,
+                    STATE: userData.STATE,
+                    COUNTRY: userData.COUNTRY,
+                    ACTIVO: true,
+                    DETAIL_ROW: {
+                        DETAIL_ROW_REG: [{
+                            CURRENT: true,
+                            REGDATE: now.toISOString(),
+                            REGTIME: now.toISOString(),
+                            REGUSER: "admin"
+                        }]
+                    },
+                    ROLES: aSelectedRoles.map(oRole => ({
+                        ROLEID: oRole.ROLEID,
+                        ROLENAME: oRole.ROLENAME
+                    }))
+                }
+            };
+            if (payload.user.PASSWORD === undefined) delete payload.user.PASSWORD;
+            return payload;
+        },
+
         //=========================================================================================================================================================
         //=============== AÑADIR USUARIO ==========================================================================================================================
         //=========================================================================================================================================================
@@ -73,14 +118,25 @@ sap.ui.define([
             const oNewUser = oView.getModel("newUser").getData();
             var oModel = this.getView().getModel("newUser");
 
-            const {
-                USERID, USERNAME, EMAIL, PHONENUMBER, BIRTHDAYDATE, COMPANYID, DEPARTMENT, FUNCTION
-            } = oNewUser;
+            oNewUser.USERNAME = `${oNewUser.FIRSTNAME || ""} ${oNewUser.LASTNAME || ""}`.trim();
 
-            // Validación de campos obligatorios
-            if (!USERID || !USERNAME || !EMAIL || !COMPANYID || !DEPARTMENT) {
-                MessageBox.warning("Completa todos los campos obligatorios.");
-                return;
+            // Lista de campos obligatorios
+            const requiredFields = [
+                "USERID", "PASSWORD", "ALIAS", "FIRSTNAME", "LASTNAME", "EMPLOYEEID", "EXTENSION",
+                "USERNAME", "EMAIL", "PHONENUMBER", "BIRTHDAYDATE", "AVATAR", "COMPANYID",
+                "DEPARTMENT", "FUNCTION", "STREET", "POSTALCODE", "CITY", "REGION", "STATE", "COUNTRY"
+            ];
+
+            for (const field of requiredFields) {
+                if (
+                    oNewUser[field] === undefined ||
+                    oNewUser[field] === null ||
+                    oNewUser[field] === "" ||
+                    (field === "POSTALCODE" && (oNewUser[field] === "" || isNaN(oNewUser[field])))
+                ) {
+                    MessageBox.warning(`El campo obligatorio "${field}" está vacío o es inválido.`);
+                    return;
+                }
             }
 
             var aSelectedRoles = oModel.getProperty("/selectedRoles") || [];
@@ -90,30 +146,8 @@ sap.ui.define([
                 return;
             }
 
-            // Construir payload
-            const now = new Date();
-            const payload = {
-                user: {
-                    USERID, USERNAME,
-                    FIRSTNAME: USERNAME,
-                    LASTNAME: "", EMAIL, PHONENUMBER,
-                    BIRTHDAYDATE: BIRTHDAYDATE ? this.formatDateToString(BIRTHDAYDATE) : null,
-                    COMPANYID, DEPARTMENT, FUNCTION,
-                    ACTIVO: true,
-                    DETAIL_ROW: {
-                        DETAIL_ROW_REG: [{
-                            CURRENT: true,
-                            REGDATE: now.toISOString(),
-                            REGTIME: now.toISOString(),
-                            REGUSER: "admin"
-                        }]
-                    },
-                    ROLES: aSelectedRoles.map(function (oRole) {
-                        return { ROLEID: oRole.ROLEID };
-                    })
-                }
-            };
-
+            // Lllama el payload
+            const payload = this.prepareUserPayload(oNewUser, aSelectedRoles, false);
 
             console.log("Payload de usuario:", payload);
 
@@ -149,36 +183,6 @@ sap.ui.define([
                 MessageBox.error("Error de conexión con el servidor.");
             }
         },
-
-        prepareUserPayload: function () {
-            const oView = this.getView();
-            const oUserModel = oView.getModel("newUser");
-            const userData = oUserModel.getData();
-
-            // Obtener roles con sus nombres completos
-            const aRolesWithNames = (userData.selectedRoles || []).map(role => ({
-                ROLEID: role.ROLEID,
-                ROLENAME: role.ROLENAME
-            }));
-
-            // Construir payload
-            const payload = {
-                user: {
-                    USERID: userData.USERID,
-                    USERNAME: userData.USERNAME,
-                    EMAIL: userData.EMAIL,
-                    PHONENUMBER: userData.PHONENUMBER,
-                    BIRTHDAYDATE: userData.BIRTHDAYDATE,
-                    COMPANYID: userData.COMPANYID,
-                    DEPARTMENT: userData.DEPARTMENT,
-                    FUNCTION: userData.FUNCTION,
-                    ROLES: aRolesWithNames
-                }
-            };
-
-            return payload;
-        },
-
 
         // Cancelar la creación del usuario
         onCancelUser: function () {
@@ -234,16 +238,30 @@ sap.ui.define([
                 const oUserData = oEditModel.getData();
 
                 // 2. Validación detallada de campos obligatorios
-                if (!oUserData.USERID || !oUserData.USERNAME || !oUserData.EMAIL ||
-                    !oUserData.COMPANYID || !oUserData.DEPARTMENT_ID) {
-                    MessageBox.warning("Completa todos los campos obligatorios.");
-                    return;
+                const requiredFields = [
+                    "USERID", "PASSWORD", "ALIAS", "FIRSTNAME", "LASTNAME", "EMPLOYEEID", "EXTENSION",
+                    "USERNAME", "EMAIL", "PHONENUMBER", "BIRTHDAYDATE", "AVATAR", "COMPANYID",
+                    "DEPARTMENT_ID", "FUNCTION", "STREET", "POSTALCODE", "CITY", "REGION", "STATE", "COUNTRY"
+                ];
+
+                for (const field of requiredFields) {
+                    if (
+                        oUserData[field] === undefined ||
+                        oUserData[field] === null ||
+                        oUserData[field] === "" ||
+                        (field === "POSTALCODE" && (oUserData[field] === "" || isNaN(oUserData[field])))
+                    ) {
+                        MessageBox.warning(`El campo obligatorio "${field}" está vacío o es inválido.`);
+                        oView.setBusy(false);
+                        return;
+                    }
                 }
 
                 // 3. Validar al menos un rol
                 var aSelectedRoles = oEditModel.getProperty("/selectedRoles") || [];
                 if (aSelectedRoles.length === 0) {
                     MessageBox.error("Debe seleccionar al menos un rol");
+                    oView.setBusy(false);
                     return;
                 }
 
@@ -260,37 +278,13 @@ sap.ui.define([
                 const sDepartmentName = oSelectedDepto.VALUE;
                 oEditModel.setProperty("/DEPARTMENT", sDepartmentName);
 
-                // 5. Construir payload con el nombre del departamento
-                const now = new Date();
-                const payload = {
-                    user: {
-                        USERID: oUserData.USERID,
-                        USERNAME: oUserData.USERNAME,
-                        FIRSTNAME: oUserData.USERNAME,
-                        EMAIL: oUserData.EMAIL,
-                        PHONENUMBER: oUserData.PHONENUMBER,
-                        BIRTHDAYDATE: oUserData.BIRTHDAYDATE ? this.formatDateToString(oUserData.BIRTHDAYDATE) : null,
-                        COMPANYID: oUserData.COMPANYID,
-                        DEPARTMENT: sDepartmentName,
-                        DEPARTMENT_ID: oUserData.DEPARTMENT_ID, 
-                        FUNCTION: oUserData.FUNCTION,
-                        ACTIVO: true,
-                        DETAIL_ROW: {
-                            DETAIL_ROW_REG: [{
-                                CURRENT: true,
-                                REGDATE: now.toISOString(),
-                                REGTIME: now.toISOString(),
-                                REGUSER: "admin"
-                            }]
-                        },
-                        ROLES: aSelectedRoles.map(function (oRole) {
-                            return {
-                                ROLEID: oRole.ROLEID,
-                                ROLENAME: oRole.ROLENAME || ""
-                            };
-                        })
-                    }
-                };
+                // 5. Construir payload con TODOS los campos
+                const payload = this.prepareUserPayload(oUserData, aSelectedRoles, true);
+
+                // Elimina la propiedad PASSWORD si no fue cambiada
+                if (payload.user.PASSWORD === undefined) {
+                    delete payload.user.PASSWORD;
+                }
 
                 console.log("Payload de actualización:", payload);
 
@@ -405,6 +399,11 @@ sap.ui.define([
         // Modal para desactivar usuario (eliminar lógico)
         onDesactivateUser: function () {
             if (this.selectedUser) {
+                // Validar si ya está inactivo
+                if (this.selectedUser.DETAIL_ROW?.ACTIVED === false) {
+                    MessageToast.show("El usuario ya está inactivo.");
+                    return;
+                }
                 var that = this;
                 MessageBox.confirm("¿Deseas desactivar el usuario con nombre: " + this.selectedUser.USERNAME + "?", {
                     title: "Confirmar desactivación",
@@ -436,6 +435,11 @@ sap.ui.define([
 
         onActivateUser: function () {
             if (this.selectedUser) {
+                // Validar si ya está activo
+                if (this.selectedUser.DETAIL_ROW?.ACTIVED === true) {
+                    MessageToast.show("El usuario ya está activo.");
+                    return;
+                }
                 var that = this;
                 MessageBox.confirm("¿Deseas activar el usuario con nombre: " + this.selectedUser.USERNAME + "?", {
                     title: "Confirmar activación",
@@ -507,7 +511,7 @@ sap.ui.define([
                         return new sap.ui.model.Filter({
                             path: sField,
                             operator: sap.ui.model.FilterOperator.Contains,
-                            value1: sQueryRaw 
+                            value1: sQueryRaw
                         });
                     });
 
@@ -526,7 +530,7 @@ sap.ui.define([
                         path: "",
                         test: (oContext) => {
                             const bActive = oContext?.DETAIL_ROW?.ACTIVED;
-                            const sStatus = this._normalizeText(this.formatStatusText(bActive)); 
+                            const sStatus = this._normalizeText(this.formatStatusText(bActive));
                             const sNormalizedQuery = this._normalizeText(sQuery);
 
                             return sStatus.startsWith(sNormalizedQuery);
@@ -814,32 +818,38 @@ sap.ui.define([
         //=========== Funciones de validaciones o extras ========================================================================================================
         //=======================================================================================================================================================
 
+        // ...existing code...
         resetNewUserModel: function () {
             const oView = this.getView();
-            oView.byId("comboBoxCompanies").setValue("");
-            oView.byId("comboBoxCedis").setValue("");
-            oView.byId("comboBoxRoles").setValue("");
-            oView.byId("inputUserBirthdayDate").setDateValue(null);
-            const rolesVBox = oView.byId("selectedRolesVBox");
-            rolesVBox.removeAllItems();
-            oView.byId("inputUserId").setValue("");
-            oView.byId("inputUsername").setValue("");
-            oView.byId("inputUserPhoneNumber").setValue("");
-            oView.byId("inputUserEmail").setValue("");
-            oView.byId("inputUserFunction").setValue("");
-
-            oView.setModel(new JSONModel({
+            // Limpia el modelo de datos
+            oView.setModel(new sap.ui.model.json.JSONModel({
                 USERID: "",
-                USERNAME: "",
+                PASSWORD: "",
+                ALIAS: "",
+                FIRSTNAME: "",
+                LASTNAME: "",
+                EMPLOYEEID: "",
+                EXTENSION: "",
                 EMAIL: "",
                 PHONENUMBER: "",
                 BIRTHDAYDATE: null,
+                AVATAR: "",
                 COMPANYID: "",
-                DEPARTMENTID: "",
+                DEPARTMENT: "",
                 FUNCTION: "",
-                ROLES: []
+                STREET: "",
+                POSTALCODE: "",
+                CITY: "",
+                REGION: "",
+                STATE: "",
+                COUNTRY: "",
+                selectedRoles: []
             }), "newUser");
-
+            // Limpia la vista de roles seleccionados
+            const rolesVBox = oView.byId("selectedRolesVBox");
+            if (rolesVBox) {
+                rolesVBox.removeAllItems();
+            }
         },
 
         //----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -860,8 +870,8 @@ sap.ui.define([
 
             if (!oSelectedItem) { return; }
 
-            const sCompanyId = oSelectedItem.getKey();   
-            const sCompanyName = oSelectedItem.getText(); 
+            const sCompanyId = oSelectedItem.getKey();
+            const sCompanyName = oSelectedItem.getText();
 
             // 1. Limpiar ComboBox de departamentos
             const oDeptosModel = new sap.ui.model.json.JSONModel({ value: [] });
@@ -906,10 +916,10 @@ sap.ui.define([
                 const envRes = await fetch("env.json");
                 const env = await envRes.json();
 
-                // 2. Construir URL según el endpoint
+                
                 const sUrl = `${env.API_USERS_URL_BASE}${sEndpoint}?${sEndpoint === 'physicalDeleteUser' ? 'userid' : 'USERID'}=${encodeURIComponent(UserId)}`;
 
-                // 3. Configurar y enviar petición
+                // 2. Configurar y enviar petición
                 const response = await fetch(sUrl, {
                     method: "POST",
                     headers: {
@@ -918,7 +928,7 @@ sap.ui.define([
                     }
                 });
 
-                // 4. Procesar respuesta de forma segura
+                // 3. Procesar respuesta de forma segura
                 let result = {};
                 try {
                     result = await response.json();
@@ -928,7 +938,7 @@ sap.ui.define([
                     return;
                 }
 
-                // 5. Validar éxito de la operación
+                // 4. Validar éxito de la operación
                 if (response.ok || result.success === true || result.deleted === true || result.status === "success") {
                     MessageToast.show(sSuccessMessage);
                     this.loadUsers();
@@ -990,14 +1000,27 @@ sap.ui.define([
                 // 4. Crear modelo para el formulario de edición
                 const oEditModel = new JSONModel({
                     USERID: oUserData.USERID,
-                    USERNAME: oUserData.USERNAME,
-                    EMAIL: oUserData.EMAIL,
-                    PHONENUMBER: oUserData.PHONENUMBER,
+                    PASSWORD: "******", // Mostrar encriptado
+                    ALIAS: oUserData.ALIAS || "",
+                    FIRSTNAME: oUserData.FIRSTNAME || "",
+                    LASTNAME: oUserData.LASTNAME || "",
+                    EMPLOYEEID: oUserData.EMPLOYEEID || "",
+                    EXTENSION: oUserData.EXTENSION || "",
+                    USERNAME: oUserData.USERNAME || "",
+                    EMAIL: oUserData.EMAIL || "",
+                    PHONENUMBER: oUserData.PHONENUMBER || "",
                     BIRTHDAYDATE: parsedBirthdayDate,
-                    COMPANYID: oUserData.COMPANYID,
-                    DEPARTMENT: oUserData.DEPARTMENT, 
+                    AVATAR: oUserData.AVATAR || "",
+                    COMPANYID: oUserData.COMPANYID || "",
+                    DEPARTMENT: oUserData.DEPARTMENT || "",
                     DEPARTMENT_ID: "",
-                    FUNCTION: oUserData.FUNCTION,
+                    FUNCTION: oUserData.FUNCTION || "",
+                    STREET: oUserData.STREET || "",
+                    POSTALCODE: oUserData.POSTALCODE || "",
+                    CITY: oUserData.CITY || "",
+                    REGION: oUserData.REGION || "",
+                    STATE: oUserData.STATE || "",
+                    COUNTRY: oUserData.COUNTRY || "",
                     selectedRoles: oUserData.ROLES || []
                 });
 
@@ -1116,7 +1139,7 @@ sap.ui.define([
 
             // Actualizar el modelo
             oEditModel.setProperty("/COMPANYID", sCompanyId);
-            oEditModel.setProperty("/DEPARTMENT_ID", ""); 
+            oEditModel.setProperty("/DEPARTMENT_ID", "");
             oEditModel.setProperty("/DEPARTMENT", "");
 
             // Cargar los departamentos de la nueva compañía

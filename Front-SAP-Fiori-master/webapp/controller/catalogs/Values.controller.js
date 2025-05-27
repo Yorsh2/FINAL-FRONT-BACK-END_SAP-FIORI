@@ -283,7 +283,21 @@ sap.ui.define([
             this.getView().getModel("newValueModel").setData({
                 VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "", DESCRIPTION: "", LABELID: "", mode: "CREATE"
             });
-        }
+        },
+
+        onCancelValues: function () {
+            const oDialog = this.byId("addValueDialog");
+            if (oDialog) {
+                oDialog.close();
+            }
+        },
+
+        onEditCancelValue: function () {
+            const oDialog = this.byId("editDialogValue");
+            if (oDialog) {
+                oDialog.close();
+            }
+        },
 
     });
 });

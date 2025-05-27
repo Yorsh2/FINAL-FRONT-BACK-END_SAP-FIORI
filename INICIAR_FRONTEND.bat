@@ -24,7 +24,7 @@ if not exist "package.json" (
     echo El archivo .bat debe estar en:
     echo PROYECTO FINAL BACKEND + FRONT
     echo y el proyecto API en:
-    echo PROYECTO FINAL BACKEND + FRONT\%SUBCARPETA_PROYECTO%\
+    echo FINAL PROJECT\%SUBCARPETA_PROYECTO%\
     pause
     exit /b 1
 )

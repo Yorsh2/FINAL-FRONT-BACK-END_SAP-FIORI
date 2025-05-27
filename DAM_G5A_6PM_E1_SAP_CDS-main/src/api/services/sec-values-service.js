@@ -5,9 +5,9 @@ async function GetAllValues(req) {
   try {
     const { valueid, active, category } = req.req.query;
     const filter = { 'DETAIL_ROW.DELETED': false };
-    if (valueid)  filter.VALUEID              = valueid;
-    if (active)   filter['DETAIL_ROW.ACTIVED'] = active === 'true';
-    if (category) filter.CATEGORY             = category;
+    if (valueid) filter.VALUEID = valueid;
+    if (active) filter['DETAIL_ROW.ACTIVED'] = active === 'true';
+    if (category) filter.CATEGORY = category;
     return await Values.find(filter)
       .select('-DETAIL_ROW.DETAIL_ROW_REG')
       .lean();
@@ -30,11 +30,17 @@ async function GetValueById(req) {
 async function GetLabelById(req) {
   try {
     const labelid = req.req.params.labelid || req.req.query.labelid;
-    const labels = await Values.find({ LABELID: labelid, 'DETAIL_ROW.DELETED': false }).lean();
-    if (!labels.length) throw new Error(`No se encontraron valores con LABELID: ${labelid}`);
-    return labels;
+    const labels = await Values.find({
+      LABELID: labelid,
+      'DETAIL_ROW.DELETED': false
+    }).lean();
+
+    return labels || [];
+
   } catch (e) {
-    throw new Error(`Error al buscar valores: ${e.message}`);
+
+    console.error(`Error al buscar valores: ${e.message}`);
+    return [];
   }
 }
 
@@ -80,7 +86,7 @@ async function UpdateValue(req) {
   const updated = await Values.findOneAndUpdate(
     { VALUEID: valueid },
     { $set: value },
-    { new:true }
+    { new: true }
   ).lean();
   return updated;
 }
@@ -90,11 +96,11 @@ async function DeactivateValue(req) {
   try {
     const { valueid, reguser } = req.data;
     if (!valueid) throw new Error('El parámetro "valueid" es requerido');
-    const audit = { CURRENT:true, REGDATE:new Date(), REGTIME:new Date(), REGUSER:reguser||'system' };
+    const audit = { CURRENT: true, REGDATE: new Date(), REGTIME: new Date(), REGUSER: reguser || 'system' };
     const updated = await Values.findOneAndUpdate(
       { VALUEID: valueid },
-      { 'DETAIL_ROW.ACTIVED': false, $push:{ 'DETAIL_ROW.DETAIL_ROW_REG': audit } },
-      { new:true }
+      { 'DETAIL_ROW.ACTIVED': false, $push: { 'DETAIL_ROW.DETAIL_ROW_REG': audit } },
+      { new: true }
     ).lean();
     if (!updated) throw new Error('Valor no encontrado');
     return updated;
@@ -107,11 +113,11 @@ async function ActivateValue(req) {
   try {
     const { valueid, reguser } = req.data;
     if (!valueid) throw new Error('El parámetro "valueid" es requerido');
-    const audit = { CURRENT:true, REGDATE:new Date(), REGTIME:new Date(), REGUSER:reguser||'system' };
+    const audit = { CURRENT: true, REGDATE: new Date(), REGTIME: new Date(), REGUSER: reguser || 'system' };
     const updated = await Values.findOneAndUpdate(
       { VALUEID: valueid },
-      { 'DETAIL_ROW.ACTIVED': true, $push:{ 'DETAIL_ROW.DETAIL_ROW_REG': audit } },
-      { new:true }
+      { 'DETAIL_ROW.ACTIVED': true, $push: { 'DETAIL_ROW.DETAIL_ROW_REG': audit } },
+      { new: true }
     ).lean();
     if (!updated) throw new Error('Valor no encontrado');
     return updated;

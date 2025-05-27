@@ -1,4 +1,8 @@
-<core:FragmentDefinition xmlns="sap.m" xmlns:core="sap.ui.core" xmlns:model="sap.ui.model">
+<core:FragmentDefinition
+    xmlns="sap.m"
+    xmlns:core="sap.ui.core"
+    xmlns:model="sap.ui.model"
+>
     <Dialog
         id="AddUserDialog"
         title="Añadir Usuario"
@@ -6,41 +10,77 @@
         type="Message"
         class="customDialogSize"
         draggable="true"
-        resizable="true">
-        
-        <VBox id="AddUserDialogVbox" class="sapUiSmallMargin">
-            <!-- Campos con eventos de cambio -->
-            <Input 
-                id="inputUserId" 
-                value="{newUser>/USERID}" 
-                required="true"
+        resizable="true"
+    >
+        <VBox
+            id="AddUserDialogVbox"
+            class="sapUiSmallMargin"
+        >
+            <!-- Campo existente: ID de Usuario -->
+            <Input
+                id="inputUserId"
                 placeholder="ID de Usuario"
-                change=".onFieldChange"
-                liveChange=".onLiveChange"/>
-                
-            <Input 
-                id="inputUsername" 
-                value="{newUser>/USERNAME}" 
-                required="true"
-                placeholder="Nombre Completo"
-                change=".onFieldChange"
-                liveChange=".onLiveChange"/>
-                
-            <Input 
-                id="inputUserPhoneNumber" 
-                value="{newUser>/PHONENUMBER}" 
-                required="true"
+                value="{newUser>/USERID}"
+            />
+
+            <!-- Nuevo: Campo PASSWORD -->
+            <Input
+                id="inputUserPassword"
+                placeholder="Contraseña"
+                type="Password"
+                value="{newUser>/PASSWORD}"
+            />
+
+            <!-- Nuevo: Campo ALIAS -->
+            <Input
+                id="inputUserAlias"
+                placeholder="Alias"
+                value="{newUser>/ALIAS}"
+            />
+
+            <!-- Nuevo: Campos FIRSTNAME y LASTNAME -->
+            <Input
+                id="inputUserFirstName"
+                placeholder="Primer Nombre"
+                value="{newUser>/FIRSTNAME}"
+            />
+            <Input
+                id="inputUserLastName"
+                placeholder="Apellido"
+                value="{newUser>/LASTNAME}"
+            />
+
+            <!-- Nuevo: Campo EMPLOYEEID -->
+            <Input
+                id="inputEmployeeId"
+                placeholder="ID de Empleado"
+                value="{newUser>/EMPLOYEEID}"
+            />
+
+            <!-- Nuevo: Campo EXTENSION -->
+            <Input
+                id="inputExtension"
+                placeholder="Extensión"
+                value="{newUser>/EXTENSION}"
+            />
+
+            <!-- Campo existente: Número telefónico -->
+            <Input
+                id="inputUserPhoneNumber"
                 placeholder="Número telefónico"
-                change=".onFieldChange"
-                liveChange=".onLiveChange"/>
-                
-            <Input 
-                id="inputUserEmail" 
-                value="{newUser>/EMAIL}" 
+                value="{newUser>/PHONENUMBER}"
+            />
+
+            <!-- Campo existente: Correo Electrónico -->
+            <Input
+                id="inputUserEmail"
+                value="{newUser>/EMAIL}"
                 placeholder="Correo Electrónico"
                 change=".onFieldChange"
-                liveChange=".onLiveChange"/>
-                
+                liveChange=".onLiveChange"
+            />
+
+            <!-- Campo existente: Fecha de nacimiento -->
             <DatePicker
                 id="inputUserBirthdayDate"
                 value="{
@@ -54,51 +94,127 @@
                 change=".onDateChange"
             />
 
+            <!-- Nuevo: Campo AVATAR (URL del avatar o similar) -->
+            <Input
+                id="inputUserAvatar"
+                placeholder="URL del Avatar"
+                value="{newUser>/AVATAR}"
+            />
 
-            <ComboBox 
-                id="comboBoxCompanies" 
-                items="{companiesModel>/value}" 
+            <!-- Combobox: Compañía -->
+            <ComboBox
+                id="comboBoxCompanies"
+                items="{companiesModel>/value}"
                 selectedKey="{newUser>/COMPANYID}"
-                selectionChange=".onCompanySelected" 
-                placeholder="Compañía">
-                <core:Item key="{companiesModel>VALUEID}" text="{companiesModel>VALUE}" />
+                selectionChange=".onCompanySelected"
+                placeholder="Compañía"
+            >
+                <core:Item
+                    key="{companiesModel>VALUEID}"
+                    text="{companiesModel>VALUE}"
+                />
             </ComboBox>
 
-            <ComboBox 
-                id="comboBoxCedis" 
-                items="{deptosModel>/value}" 
+            <!-- Combobox: Departamento (CEDIS) -->
+            <ComboBox
+                id="comboBoxCedis"
+                items="{deptosModel>/value}"
                 selectedKey="{newUser>/DEPARTMENT}"
-                selectionChange=".onCediSelected" 
-                placeholder="Departamento">
-                <core:Item key="{deptosModel>VALUEID}" text="{deptosModel>VALUE}" />
+                selectionChange=".onCediSelected"
+                placeholder="Departamento"
+            >
+                <core:Item
+                    key="{deptosModel>VALUEID}"
+                    text="{deptosModel>VALUE}"
+                />
             </ComboBox>
 
-            <ComboBox id="comboBoxRoles" 
-                items="{rolesModel>/roles}" 
-                placeholder="Selecciona un Rol" 
-                selectionChange=".onRoleSelected">
-                <core:Item key="{rolesModel>ROLEID}" text="{rolesModel>ROLENAME}" />
+            <!-- Combobox: Roles -->
+            <ComboBox
+                id="comboBoxRoles"
+                items="{rolesModel>/roles}"
+                placeholder="Selecciona un Rol"
+                selectionChange=".onRoleSelected"
+            >
+                <core:Item
+                    key="{rolesModel>ROLEID}"
+                    text="{rolesModel>ROLENAME}"
+                />
             </ComboBox>
 
-
-            <VBox id="selectedRolesVBox" class="sapUiSmallMarginTop">
+            <!-- Caja para mostrar roles seleccionados -->
+            <VBox
+                id="selectedRolesVBox"
+                class="sapUiSmallMarginTop"
+            >
                 <!-- Roles seleccionados aparecerán aquí -->
             </VBox>
 
-            <Input 
-                id="inputUserFunction" 
-                value="{newUser>/FUNCTION}" 
+            <!-- Grupo: Datos de dirección -->
+            <Title
+                text="Dirección"
+                level="H4"
+            />
+            <!-- Nuevo: Calle -->
+            <Input
+                id="inputStreetUser"
+                placeholder="Calle"
+                value="{newUser>/STREET}"
+            />
+            <!-- Nuevo: Código Postal -->
+            <Input
+                id="inputPostalCodeUser"
+                placeholder="Código Postal"
+                value="{newUser>/POSTALCODE}"
+            />
+            <!-- Nuevo: Ciudad -->
+            <Input
+                id="inputCityUser"
+                placeholder="Ciudad"
+                value="{newUser>/CITY}"
+            />
+            <!-- Nuevo: Región -->
+            <Input
+                id="inputRegionUser"
+                placeholder="Región"
+                value="{newUser>/REGION}"
+            />
+            <!-- Nuevo: Estado -->
+            <Input
+                id="inputStateUser"
+                placeholder="Estado"
+                value="{newUser>/STATE}"
+            />
+            <!-- Nuevo: País -->
+            <Input
+                id="inputCountryUser"
+                placeholder="País"
+                value="{newUser>/COUNTRY}"
+            />
+
+            <!-- Campo existente: Función que ejerce -->
+            <Input
+                id="inputUserFunction"
                 placeholder="Función que ejerce"
-                change=".onFieldChange"
-                liveChange=".onLiveChange"/>
+                value="{newUser>/FUNCTION}"
+            />
         </VBox>
 
         <beginButton>
-            <Button id="SaveNewUser" text="Guardar" type="Emphasized" press=".onSaveUser" />
+            <Button
+                id="SaveNewUser"
+                text="Guardar"
+                type="Emphasized"
+                press="onSaveUser"
+            />
         </beginButton>
 
         <endButton>
-            <Button id="CancelSaveUser" text="Cancelar" press=".onCancelUser" />
+            <Button
+                id="CancelSaveUser"
+                text="Cancelar"
+                press="onCancelUser"
+            />
         </endButton>
     </Dialog>
 </core:FragmentDefinition>
