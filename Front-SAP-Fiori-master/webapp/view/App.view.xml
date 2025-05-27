@@ -51,7 +51,7 @@
             icon="sap-icon://shield"
             expanded="false">
             
-            <!-- Gestión de Roles -->
+           <!-- Gestión de Roles -->
             <tnt:NavigationListItem
               id="navItemRoles"
               key="roles"
