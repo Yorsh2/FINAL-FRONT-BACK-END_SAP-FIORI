@@ -6,24 +6,20 @@
   xmlns:tl="sap.ui.table"
   xmlns:rowmodes="sap.ui.table.rowmodes"
   >
-
-  <m:Page id="rolesMaster" title="Roles" class="sapUiContentPadding">
-
-
     <m:Toolbar design="Transparent" class="customRoleToolbar">
       <m:Button text="Crear" icon="sap-icon://add" type="Accept" press=".onOpenDialog" />
-      <m:Button text="Editar" icon="sap-icon://edit" type="Emphasized" press=".onEditRole" enabled="{= ${roles>/value}.length > 0 }"/>
-      <m:Button text="Eliminar" icon="sap-icon://delete" type="Negative" press=".onDeleteRole" />  
+      <m:Button text="Editar" type="Emphasized" icon="sap-icon://edit" enabled="{uiState>/editButtonEnabled}" press=".onUpdateRole" />
+      <m:Button text="Desactivar" icon="sap-icon://delete" enabled="{uiState>/desactivatedButtonEnabled}" press=".onDesactivateRole" type="Attention" />
+      <m:Button text="Eliminar" icon="sap-icon://delete" type="Reject" enabled="{uiState>/deleteButtonEnabled}" press=".onDeleteRole" />
       <m:SearchField id="searchRoleName" width="25rem" placeholder="Buscar roles..." liveChange=".onMultiSearch" />
 
       <m:ToolbarSpacer />
       <m:ToolbarSpacer />
-      <m:Button text="Privilegios" icon="sap-icon://role" type="Emphasized" press=".onGoToPrivileges" />
-  
+
     </m:Toolbar>
 
 
-    <tl:Table id="rolesTable" rows="{roles>/value}" selectionMode="Single" selectionBehavior="RowOnly"  enableColumnReordering="true" alternateRowColors="true" rowActionCount="2" width="100%">
+    <tl:Table id="rolesTable" rows="{roles>/value}" selectionMode="Single" selectionBehavior="RowOnly" rowSelectionChange=".onRoleSelected" enableColumnReordering="true" alternateRowColors="true" rowActionCount="2" width="100%">
 
       <tl:rowMode>
         <rowmodes:Fixed rowCount="20" />
@@ -51,56 +47,10 @@
         <tl:Column sortProperty="DETAIL_ROW/ACTIVED" width="15%">
           <m:Label text="Estado" />
           <tl:template>
-          <m:ObjectStatus 
-            text="{= typeof ${roles>ACTIVO} === 'boolean' ? (${roles>ACTIVO} ? 'Activo' : 'Inactivo') : (${roles>DETAIL_ROW/ACTIVED} ? 'Activo' : 'Inactivo') }" 
-            state="{= typeof ${roles>ACTIVO} === 'boolean' ? (${roles>ACTIVO} ? 'Success' : 'Warning') : (${roles>DETAIL_ROW/ACTIVED} ? 'Success' : 'Warning') }" />
+            <m:ObjectStatus text="{= ${roles>ACTIVO} === true || ${roles>ACTIVO} === 'true' || ${roles>DETAIL_ROW/ACTIVED} === true || ${roles>DETAIL_ROW/ACTIVED} === 'true' ? 'Activo' : 'Inactivo' }"
+                            state="{= ${roles>ACTIVO} === true || ${roles>ACTIVO} === 'true' || ${roles>DETAIL_ROW/ACTIVED} === true || ${roles>DETAIL_ROW/ACTIVED} === 'true' ? 'Success' : 'Warning' }" />
           </tl:template>
         </tl:Column>
-        <tl:Column sortProperty="DETAIL_ROW/DELETED" width="8rem">
-        <m:Label text="Eliminado" />
-        <tl:template>
-          <m:ObjectStatus text="{= ${roles>DETAIL_ROW/DELETED} ? 'true' : 'false' }"
-                          state="{= ${roles>DETAIL_ROW/DELETED} ? 'Error' : 'Success' }" />
-        </tl:template>
-      </tl:Column>
-
-      <tl:Column sortProperty="DETAIL_ROW/CURRENT" width="8rem">
-        <m:Label text="Current" />
-        <tl:template>
-          <m:ObjectStatus text="{= ${roles>DETAIL_ROW/CURRENT} ? 'true' : 'false' }"
-                          state="{= ${roles>DETAIL_ROW/CURRENT} ? 'Information' : 'None' }" />
-        </tl:template>
-      </tl:Column>
-
-      <tl:Column sortProperty="DETAIL_ROW/DETAIL_ROW_REG/REGDATE" width="12rem">
-        <m:Label text="Fecha Registro" />
-        <tl:template>
-          <m:Text text="{ path: 'roles>DETAIL_ROW', formatter: '.formatRegDate' }" />
-        </tl:template>
-      </tl:Column>
-
-      <tl:Column sortProperty="DETAIL_ROW/DETAIL_ROW_REG/REGTIME" width="10rem">
-        <m:Label text="Hora Registro" />
-        <tl:template>
-          <m:Text text="{ path: 'roles>DETAIL_ROW', formatter: '.formatRegTime' }" />
-        </tl:template>
-      </tl:Column>
-
-      <tl:Column sortProperty="DETAIL_ROW/DETAIL_ROW_REG/REGUSER" width="10rem">
-        <m:Label text="Usuario Registro" />
-        <tl:template>
-          <m:Text text="{ path: 'roles>DETAIL_ROW', formatter: '.formatRegUser' }" />
-        </tl:template>
-      </tl:Column>
-
-      <tl:Column sortProperty="PRIVILEGES" width="20rem">
-        <m:Label text="Privilegios" />
-        <tl:template>
-          <m:Text
-            text="{ path: 'roles>PRIVILEGES', formatter: '.formatPrivileges' }"
-            wrapping="true" />
-        </tl:template>
-      </tl:Column>
 
       </tl:columns>
 
@@ -116,7 +66,4 @@
         </m:OverflowToolbar>
       </tl:footer>
     </tl:Table>
-
-
-  </m:Page>
 </mvc:View>
