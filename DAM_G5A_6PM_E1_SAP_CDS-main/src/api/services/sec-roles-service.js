@@ -71,6 +71,59 @@ async function DeleteRoleById(req) {
   return deleted;
 }
 
+
+//DELETE LOGICO
+async function deleteLogicRole(req) {
+  try {
+    const { ROLEID } = req.data;
+    if (!ROLEID) throw boom.badRequest("Falta el parámetro ROLEID");
+
+    const now = new Date();
+
+    // Paso 1: Desactivar el registro actual en el array DETAIL_ROW_REG
+    await ZTRoles.updateOne(
+      { ROLEID, "DETAIL_ROW.DETAIL_ROW_REG.CURRENT": true },
+      {
+        $set: {
+          "DETAIL_ROW.DETAIL_ROW_REG.$.CURRENT": false
+        }
+      }
+    );
+
+    // Paso 2: Marcar el rol como eliminado y agregar nuevo registro de auditoría
+    const updated = await ZTRoles.findOneAndUpdate(
+      { ROLEID },
+      {
+        ACTIVO: false,
+        ELIMINADO: true,
+        CURRENT: false,
+        "DETAIL_ROW.ACTIVO": false,
+        "DETAIL_ROW.ELIMINADO": true,
+        $push: {
+          "DETAIL_ROW.DETAIL_ROW_REG": {
+            CURRENT: true,
+            REGDATE: now,
+            REGTIME: now.toISOString().substring(11, 19),
+            REGUSER: "admin"
+          }
+        }
+      },
+      { new: true }
+    ).lean();
+
+    if (!updated) throw boom.notFound(`No se encontró el registro con ROLEID=${ROLEID}`);
+
+    return {
+      message: "Rol marcado como eliminado (lógico)",
+      updated,
+    };
+
+  } catch (error) {
+    if (error.isBoom) throw error;
+    throw boom.internal("Error en el borrado lógico del rol", error);
+  }
+}
+
 async function UpdateRoleById(req) {
   const rolesData = req.data.roles;
 
