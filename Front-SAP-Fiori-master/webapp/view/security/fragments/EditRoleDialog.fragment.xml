@@ -21,35 +21,37 @@
     columnsM="2">
 
     <m:Label text="ID del Rol" />
-    <m:Input value="{editRole>/ROLEID}" placeholder="Ej. IdAdmin" />
+    <m:Input value="{roleDialogModel>/ROLEID}" placeholder="Ej. IdAdmin" />
 
     <m:Label text="Nombre del Rol" />
-    <m:Input value="{editRole>/ROLENAME}" placeholder="Ej. Administrador" />
+    <m:Input value="{roleDialogModel>/ROLENAME}" placeholder="Ej. Administrador" />
 
     <m:Label text="Descripción" />
-    <m:Input value="{editRole>/DESCRIPTION}" placeholder="Ej. Encargado de seguridad..." />
+    <m:Input value="{roleDialogModel>/DESCRIPTION}" placeholder="Ej. Encargado de seguridad..." />
 
     <core:Title text="Privilegios por Proceso" />
 
     <m:Label text="Proceso" />
     <m:ComboBox
       items="{processCatalogModel>/values}"
-      selectedKey="{editRole>/NEW_PROCESSID}"
+      selectedKey="{roleDialogModel>/NEW_PROCESSID}"
       placeholder="Selecciona un proceso">
-      <core:Item key="{processCatalogModel>VALUEID}" text="{processCatalogModel>VALUE} -{processCatalogModel>VALUEPAID}" />
+      <core:Item key="{processCatalogModel>VALUEID}" 
+      text="{processCatalogModel>VALUENAME} - {processCatalogModel>VALUEID}" />
     </m:ComboBox>
 
     <m:Label text="Privilegios" />
     <m:MultiComboBox
       items="{privilegeCatalogModel>/values}"
-      selectedKeys="{editRole>/NEW_PRIVILEGES}"
+      selectedKeys="{roleDialogModel>/NEW_PRIVILEGES}"
       placeholder="Selecciona privilegios">
-      <core:Item key="{privilegeCatalogModel>VALUEID}" text="{privilegeCatalogModel>VALUE}" />
+      <core:Item key="{privilegeCatalogModel>VALUEID}" 
+      text="{privilegeCatalogModel>VALUENAME}" />
     </m:MultiComboBox>
 
     <m:Button text="Agregar Privilegio" icon="sap-icon://add" press=".onAddPrivilege" />
 
-    <m:Table items="{editRole>/PRIVILEGES}" growing="true" growingThreshold="5">
+    <m:Table items="{roleDialogModel>/PRIVILEGES}" growing="true" growingThreshold="5">
       <m:columns>
         <m:Column><m:Text text="Proceso" /></m:Column>
         <m:Column><m:Text text="Privilegios" /></m:Column>
@@ -58,9 +60,9 @@
       <m:items>
         <m:ColumnListItem>
           <m:cells>
-            <m:Text text="{editRole>PROCESSID}" />
-            <m:Text text="{ path: 'editRole>PRIVILEGEID', formatter: '.formatPrivileges' }" />
-            <m:Button icon="sap-icon://decline" type="Reject" press="onRemovePrivilege" tooltip="Eliminar" />
+            <m:Text text="{roleDialogModel>PROCESSID}" />
+            <m:Text text="{= ${roleDialogModel>PRIVILEGEID}.join(', ')}" />
+            <m:Button icon="sap-icon://decline" type="Reject" press=".onRemovePrivilege" tooltip="Eliminar" />
           </m:cells>
         </m:ColumnListItem>
       </m:items>
@@ -68,10 +70,10 @@
   </layout:SimpleForm>
 
   <m:buttons>
-    <m:Button 
-    text="Guardar"
-    type="Emphasized"
-    press=".onSaveRoleEdit" />
+    <m:Button
+      text="Guardar"
+      type="Emphasized"
+      press=".onSaveRoleEdit" />
     <m:Button text="Cancelar" press=".onDialogClose" />
   </m:buttons>
 </m:Dialog>
