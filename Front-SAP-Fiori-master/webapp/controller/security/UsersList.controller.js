@@ -150,7 +150,7 @@ sap.ui.define([
             // Lllama el payload
             const payload = this.prepareUserPayload(oNewUser, aSelectedRoles, false);
 
-            console.log("Payload de usuario:", payload);
+            // console.log("Payload de usuario:", payload);
 
             try {
                 // Obtener configuración del entorno
@@ -287,7 +287,7 @@ sap.ui.define([
                     delete payload.user.PASSWORD;
                 }
 
-                console.log("Payload de actualización:", payload);
+                // console.log("Payload de actualización:", payload);
 
                 // 6. Obtener configuración del entorno
                 const envRes = await fetch("env.json");
@@ -648,7 +648,7 @@ sap.ui.define([
             de las compañias y elegir una para ejecutar esta función.
         */
         loadDeptos: function (companyId, selectedDepto = "") {
-            console.log("🔧 Entrando a loadDeptos con companyId:", companyId);
+            // console.log("🔧 Entrando a loadDeptos con companyId:", companyId);
 
             if (!companyId) {
                 console.warn("⚠️ companyId está vacío o undefined. Abortando fetch.");
@@ -662,7 +662,7 @@ sap.ui.define([
                 .then(res => res.json())
                 .then(env => {
                     var url = env.API_VALUES_URL_BASE + "getCompanyById?companyid=" + encodeURIComponent(companyId);
-                    console.log("🌐 URL de fetch departamentos:", url);
+                    // console.log("🌐 URL de fetch departamentos:", url);
                     return fetch(url);
                 })
                 .then(res => res.json())
@@ -680,7 +680,7 @@ sap.ui.define([
                             const deptExists = data.value.some(dept => dept.DEPARTMENTID === selectedDepto);
                             if (deptExists) {
                                 oEditModel.setProperty("/DEPARTMENT", selectedDepto);
-                                console.log("🏢 Departamento seleccionado en el modelo editUser:", selectedDepto);
+                                // console.log("🏢 Departamento seleccionado en el modelo editUser:", selectedDepto);
                                 const oDeptoCombo = that.byId("comboBoxEditCedis");
                                 if (oDeptoCombo) {
                                     oDeptoCombo.setSelectedKey(selectedDepto);

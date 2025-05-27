@@ -13,7 +13,7 @@ sap.ui.define([
             onInit: function () {
         const oModel = this.getView().getModel("selectedRole");
         if (oModel) {
-          console.log("selectedRole data", oModel.getData());
+          // console.log("selectedRole data", oModel.getData());
         } else {
           console.warn("Modelo 'selectedRole' no está disponible");
         }

@@ -32,7 +32,7 @@ sap.ui.define(
             if (!res.ok) throw new Error("Error cargando labels");
 
             const data = await res.json();
-            console.log(data);
+            // console.log(data);
             oModel.setData({ value: data.value });
           } catch (error) {
             MessageToast.show("Error al cargar labels: " + error.message);
