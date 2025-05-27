@@ -23,26 +23,21 @@ sap.ui.define([
 
     return BaseController.extend("com.invertions.sapfiorimodinv.controller.catalogs.Values", {
 
-        onInit: function () {
+        onInit: async function () {
             var oView = this.getView();
             oView.setModel(new JSONModel({
-                values: [],
-                selectedValue: null,
-                selectedValueIn: false
+                values: [], selectedValue: null, selectedValueIn: false
             }), "values");
             oView.setModel(new JSONModel({
-                VALUEID: "",
-                VALUE: "",
-                VALUEPAID: "",
-                ALIAS: "",
-                IMAGE: "",
-                DESCRIPTION: "",
-                LABELID: "",
-                mode: "CREATE"
+                VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "", DESCRIPTION: "", LABELID: "", mode: "CREATE"
             }), "newValueModel");
             var oDeviceModel = new JSONModel(Device);
             oDeviceModel.setDefaultBindingMode("OneWay");
             oView.setModel(oDeviceModel, "device");
+
+            const envRes = await fetch("env.json");
+            this.env = await envRes.json();
+
             this.loadValues();
         },
 
@@ -51,7 +46,7 @@ sap.ui.define([
             oView.setModel(oLabelsModel, "labels");
             oView.setBusy(true);
             $.ajax({
-                url: "http://localhost:3333/api/security/label/getAllLabels",
+                url: this.env.API_LABELSCATALOGOS_URL_BASE + "getAllLabels",
                 method: "GET",
                 success: function (data) {
                     var aRaw = data.value || data.data || data || [];
@@ -59,7 +54,7 @@ sap.ui.define([
                     oLabelsModel.setProperty("/labels", aClean);
                 },
                 error: function () {
-                    MessageToast.show("Error al cargar labels desde 3333");
+                    MessageToast.show("Error al cargar labels desde API_LABELSCATALOGOS_URL_BASE");
                 },
                 complete: function () {
                     oView.setBusy(false);
@@ -69,7 +64,7 @@ sap.ui.define([
 
         openValueDialog: function (ruta) {
             var oView = this.getView();
-            this._loadLabels();  // Cargar todos los labels al abrir diálogo
+            this._loadLabels();
             if (!this._oDialog) {
                 Fragment.load({
                     id: oView.getId(),
@@ -87,8 +82,7 @@ sap.ui.define([
 
         onAddValues: function () {
             this.getView().getModel("newValueModel").setData({
-                VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "",
-                DESCRIPTION: "", LABELID: "", mode: "CREATE"
+                VALUEID: "", VALUE: "", VALUEPAID: "", ALIAS: "", IMAGE: "", DESCRIPTION: "", LABELID: "", mode: "CREATE"
             });
             this.getView().getModel("values").setProperty("/selectedValueIn", false);
             this.openValueDialog("AddValueDialog");
@@ -96,11 +90,8 @@ sap.ui.define([
 
         onEditValue: function () {
             const oSel = this.getView().getModel("values").getProperty("/selectedValue") || {};
-            this.getView().getModel("newValueModel").setData({
-                ...oSel,
-                mode: "EDIT"
-            });
-            this.openValueDialog("EditValueDialog");  // También hace el _loadLabels()
+            this.getView().getModel("newValueModel").setData({ ...oSel, mode: "EDIT" });
+            this.openValueDialog("EditValueDialog");
         },
 
         onItemSelect: function (oEvent) {
@@ -114,7 +105,7 @@ sap.ui.define([
             var oView = this.getView(), oModel = oView.getModel("values");
             oView.setBusy(true);
             $.ajax({
-                url: "http://localhost:3333/api/security/values/getAllValues",
+                url: this.env.API_VALUES_URL_BASE + "getAllValues",
                 method: "GET",
                 success: function (res) {
                     var aItems = res.value || res;
@@ -141,16 +132,18 @@ sap.ui.define([
             oView.setBusy(true);
 
             $.ajax({
-                // CORREGIDO: Llamada con query param para CDS OData
-                url: "http://localhost:3333/api/security/values/getLabelById?labelid=" + encodeURIComponent(labelid),
+                url: this.env.API_VALUES_URL_BASE + "getLabelById?labelid=" + encodeURIComponent(labelid),
                 method: "GET",
                 success: function (res) {
                     var aItems = res.value || res || [];
+                    if (aItems.length === 0) {
+                        aItems = [{ VALUEID: "default", VALUE: "default" }];
+                    }
                     oValuesModel.setProperty("/FilteredValues", aItems);
                 },
                 error: function () {
                     MessageToast.show("Error al obtener valores filtrados por LABELID");
-                    oValuesModel.setProperty("/FilteredValues", []);
+                    oValuesModel.setProperty("/FilteredValues", [{ VALUEID: "default", VALUE: "default" }]);
                 },
                 complete: function () {
                     oView.setBusy(false);
@@ -182,11 +175,11 @@ sap.ui.define([
 
             var url, method, body;
             if (oForm.mode === "CREATE") {
-                url = "http://localhost:3333/api/security/values/view";
+                url = this.env.API_VALUES_URL_BASE + "view";
                 method = "POST";
                 body = JSON.stringify({ value: oPayload });
             } else {
-                url = "http://localhost:3333/api/security/values/updateValue";
+                url = this.env.API_VALUES_URL_BASE + "updateValue";
                 method = "POST";
                 body = JSON.stringify({ valueid: oForm.VALUEID, value: oPayload });
             }
@@ -229,7 +222,7 @@ sap.ui.define([
                 return;
             }
             var payload = { valueid: oSel.VALUEID, reguser: oSel.VALUEID };
-            var sUrl = "http://localhost:3333/api/security/values/" + (bActivate ? "activateValue" : "deactivateValue");
+            var sUrl = this.env.API_VALUES_URL_BASE + (bActivate ? "activateValue" : "deactivateValue");
 
             this.getView().setBusy(true);
             $.ajax({
@@ -263,7 +256,7 @@ sap.ui.define([
                     if (action === MessageBox.Action.OK) {
                         this.getView().setBusy(true);
                         $.ajax({
-                            url: "http://localhost:3333/api/security/values/deleteview",
+                            url: this.env.API_VALUES_URL_BASE + "deleteview",
                             method: "POST",
                             contentType: "application/json",
                             data: JSON.stringify(payload),
