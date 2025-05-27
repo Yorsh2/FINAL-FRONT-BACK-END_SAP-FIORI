@@ -39,6 +39,7 @@ sap.ui.define([
                     BIRTHDAYDATE: userData.BIRTHDAYDATE ? this.formatDateToString(userData.BIRTHDAYDATE) : null,
                     AVATAR: userData.AVATAR,
                     COMPANYID: userData.COMPANYID,
+                    COMPANYNAME: userData.COMPANYNAME,
                     DEPARTMENT: userData.DEPARTMENT,
                     DEPARTMENT_ID: userData.DEPARTMENT_ID,
                     FUNCTION: userData.FUNCTION,
@@ -916,7 +917,7 @@ sap.ui.define([
                 const envRes = await fetch("env.json");
                 const env = await envRes.json();
 
-                
+
                 const sUrl = `${env.API_USERS_URL_BASE}${sEndpoint}?${sEndpoint === 'physicalDeleteUser' ? 'userid' : 'USERID'}=${encodeURIComponent(UserId)}`;
 
                 // 2. Configurar y enviar petición
@@ -1012,6 +1013,7 @@ sap.ui.define([
                     BIRTHDAYDATE: parsedBirthdayDate,
                     AVATAR: oUserData.AVATAR || "",
                     COMPANYID: oUserData.COMPANYID || "",
+                    COMPANYNAME: oUserData.COMPANYNAME || "",
                     DEPARTMENT: oUserData.DEPARTMENT || "",
                     DEPARTMENT_ID: "",
                     FUNCTION: oUserData.FUNCTION || "",
@@ -1134,11 +1136,14 @@ sap.ui.define([
             if (!oSelectedItem) return;
 
             const sCompanyId = oSelectedItem.getKey();
+            const sCompanyName = oSelectedItem.getText();
             const oView = this.getView();
             const oEditModel = oView.getModel("editUser");
 
             // Actualizar el modelo
             oEditModel.setProperty("/COMPANYID", sCompanyId);
+            oEditModel.setProperty("/COMPANYNAME", sCompanyName);
+
             oEditModel.setProperty("/DEPARTMENT_ID", "");
             oEditModel.setProperty("/DEPARTMENT", "");
 
