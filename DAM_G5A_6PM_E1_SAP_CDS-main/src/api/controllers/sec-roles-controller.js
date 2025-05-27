@@ -4,7 +4,8 @@ const {
   GetRoleById,
   addOne,
   DeleteRoleById,
-  UpdateRoleById
+  UpdateRoleById,
+  deleteLogicRole
 } = require('../services/sec-roles-service');
 
 class RolesClass extends cds.ApplicationService {
@@ -18,6 +19,7 @@ class RolesClass extends cds.ApplicationService {
     this.on('addOne',     addOne);
     this.on('deleteItem', DeleteRoleById);
     this.on('updateItem', UpdateRoleById);
+    this.on('deleteLogic', deleteLogicRole);
     return super.init();
   }
 }
