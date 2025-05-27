@@ -181,5 +181,6 @@ module.exports = {
   GetRoleById,
   addOne,
   DeleteRoleById,
-  UpdateRoleById
+  UpdateRoleById,
+  deleteLogicRole
 };
