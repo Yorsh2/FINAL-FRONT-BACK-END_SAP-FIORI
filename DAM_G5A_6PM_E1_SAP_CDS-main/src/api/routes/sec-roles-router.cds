@@ -24,4 +24,8 @@ service RolesRouter @(path : '/api/security/rol') {
   @Core.Description: 'UPDATE role by ID'
   @path: 'updateItem'
   action updateItem(roles: roles) returns roles;
+
+  @Core.Description: 'DELETE logic (soft delete) by ROLEID'
+  @path: 'deleteLogic'
+  action deleteLogic(ROLEID: String) returns roles;
 }
