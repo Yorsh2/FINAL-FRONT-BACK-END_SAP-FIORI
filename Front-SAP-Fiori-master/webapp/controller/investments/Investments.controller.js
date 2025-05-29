@@ -17,105 +17,162 @@ sap.ui.define([
       _sSidebarOriginalSize: "380px", 
 
       onInit: function() {
-          // 1. Modelo para los símbolos (datos estáticos por ahora)
-          this._initSymbolModel();
-          
-          // 2. Modelo para la tabla (vacío)
-          this.getView().setModel(new JSONModel({
-            value: [] 
-        }), "priceData");
+    // 1. Modelo para los símbolos (datos estáticos por ahora)
+    this._initSymbolModel();
+    
+    // 2. Modelo para la tabla (vacío)
+    this.getView().setModel(new JSONModel({
+        value: [] 
+    }), "priceData");
 
-          // 3. Configurar gráfica
-          this.getView().addEventDelegate({
-            onAfterRendering: this._onViewAfterRendering.bind(this)
-        });
+    // 3. Configurar gráfica
+    this.getView().addEventDelegate({
+        onAfterRendering: this._onViewAfterRendering.bind(this)
+    });
 
-        var oViewModel = new sap.ui.model.json.JSONModel({
-            selectedTab: "table"
-        });
-        this.getView().setModel(oViewModel, "viewModel");
+    var oViewModel = new sap.ui.model.json.JSONModel({
+        selectedTab: "table"
+    });
+    this.getView().setModel(oViewModel, "viewModel");
 
+    // Inicializar el modelo de análisis
+    var oStrategyAnalysisModelData = {
+        balance: 1000,
+        stock: 1,
+        strategyKey: "",
+        longSMA: 200,
+        shortSMA: 50,
+        startDate: null,
+        endDate: null,
+        controlsVisible: false,
+        strategies: [
+            { key: "", text: "Cargando textos..." },
+            { key: "MACrossover", text: "Cargando textos..." }
+        ]
+    };
+    var oStrategyAnalysisModel = new JSONModel(oStrategyAnalysisModelData);
+    this.getView().setModel(oStrategyAnalysisModel, "strategyAnalysisModel");
 
-          // Inicializar el modelo de análisis (tus cambios)
-          var oStrategyAnalysisModelData = {
-              balance: 1000,
-              stock: 1,
-              strategyKey: "",
-              longSMA: 200,
-              shortSMA: 50,
-              startDate: null,
-              endDate: null,
-              controlsVisible: false,
-              strategies: [
-                  { key: "", text: "Cargando textos..." },
-                  { key: "MACrossover", text: "Cargando textos..." }
-              ]
-          };
-          var oStrategyAnalysisModel = new JSONModel(oStrategyAnalysisModelData);
-          this.getView().setModel(oStrategyAnalysisModel, "strategyAnalysisModel");
+   this.getView().setModel(new JSONModel({
+    strategies: [
+        {
+            strategyName: "Estrategia MA Crossover",
+            symbol: "AAPL",
+            result: 2500.50,
+            details: {
+                STRATEGY: "Media Móvil 50/200",
+                STARTDATE: "2024-05-01",
+                ENDDATE: "2024-05-15"
+            }
+        },
+        {
+            strategyName: "Estrategia RSI",
+            symbol: "TSLA",
+            result: -1200.30,
+            details: {
+                STRATEGY: "RSI Sobrevendido",
+                STARTDATE: "2024-05-10",
+                ENDDATE: "2024-05-16"
+            }
+        },
+        {
+            strategyName: "Estrategia Breakout",
+            symbol: "MSFT",
+            result: 3400.80,
+            details: {
+                STRATEGY: "Breakout Nivel 100",
+                STARTDATE: "2024-05-05",
+                ENDDATE: "2024-05-17"
+            }
+        },
+        {
+            strategyName: "Estrategia MACD",
+            symbol: "NVDA",
+            result: 5200.75,
+            details: {
+                STRATEGY: "MACD Divergencia",
+                STARTDATE: "2024-05-12",
+                ENDDATE: "2024-05-18"
+            }
+        },
+        {
+            strategyName: "Estrategia Bollinger",
+            symbol: "AMZN",
+            result: -800.20,
+            details: {
+                STRATEGY: "Bandas Bollinger",
+                STARTDATE: "2024-05-08",
+                ENDDATE: "2024-05-14"
+            }
+        }
+    ],
+    filteredCount: 0,
+    selectedCount: 0,
+    filters: {
+        dateRange: null,
+        investmentRange: [0, 10000],
+        profitRange: [-100, 100]
+    },
+    isDeleteMode: false
+}), "historyModel");
 
-          //Inicialización modelo de resultados
-          var oStrategyResultModel = new JSONModel({
-              hasResults: false,
-              idSimulation: null,
-              signal: null,
-              date_from: null,
-              date_to: null,
-              moving_averages: { short: null, long: null },
-              signals: [],
-              chart_data: {},
-              result: null
-          });
-          this.getView().setModel(oStrategyResultModel, "strategyResultModel");
-          
-          this._setDefaultDates(); // Tus cambios
+    //Inicialización modelo de resultados
+    var oStrategyResultModel = new JSONModel({
+        hasResults: false,
+        idSimulation: null,
+        signal: null,
+        date_from: null,
+        date_to: null,
+        moving_averages: { short: null, long: null },
+        signals: [],
+        chart_data: {},
+        result: null
+    });
+    this.getView().setModel(oStrategyResultModel, "strategyResultModel");
+    
+    this._setDefaultDates();
 
-          // Cargar el ResourceBundle asíncronamente (tus cambios)
-          var oI18nModel = this.getOwnerComponent().getModel("i18n");
-          if (oI18nModel) {
-              var oResourceBundlePromise = oI18nModel.getResourceBundle();
-              oResourceBundlePromise.then(function(oLoadedBundle) {
-                  console.log("Promesa del ResourceBundle resuelta. Bundle:", oLoadedBundle);
-                  if (oLoadedBundle && typeof oLoadedBundle.getText === 'function') {
-                      this._oResourceBundle = oLoadedBundle;
-                      oStrategyAnalysisModel.setProperty("/strategies", [
-                          { key: "", text: this._oResourceBundle.getText("selectStrategyPlaceholder") },
-                          { key: "MACrossover", text: this._oResourceBundle.getText("movingAverageCrossoverStrategy") }
-                      ]);
-                      console.log("Textos de i18n cargados en el modelo de estrategias.");
-                  } else {
-                      oStrategyAnalysisModel.setProperty("/strategies", [
-                          { key: "", text: "Error i18n: Seleccione..." },
-                          { key: "MACrossover", text: "Error i18n: Cruce Medias..." }
-                      ]);
-                  }
-              }.bind(this)).catch(function(error) {
-                  console.error("Error al resolver la Promesa del ResourceBundle:", error);
-                  oStrategyAnalysisModel.setProperty("/strategies", [
-                      { key: "", text: "Error Promesa i18n: Seleccione..." },
-                      { key: "MACrossover", text: "Error Promesa i18n: Cruce Medias..." }
-                  ]);
-              });
-          } else {
-              console.error("Modelo i18n no encontrado. Usando textos por defecto.");
-              oStrategyAnalysisModel.setProperty("/strategies", [
-                  { key: "", text: "No i18n: Seleccione..." },
-                  { key: "MACrossover", text: "No i18n: Cruce Medias..." }
-              ]);
-          }
+    // Cargar el ResourceBundle
+    var oI18nModel = this.getOwnerComponent().getModel("i18n");
+    if (oI18nModel) {
+        try {
+            var oResourceBundle = oI18nModel.getResourceBundle();
+            if (oResourceBundle && typeof oResourceBundle.getText === 'function') {
+                this._oResourceBundle = oResourceBundle;
+                oStrategyAnalysisModel.setProperty("/strategies", [
+                    { key: "", text: this._oResourceBundle.getText("selectStrategyPlaceholder") },
+                    { key: "MACrossover", text: this._oResourceBundle.getText("movingAverageCrossoverStrategy") }
+                ]);
+                console.log("Textos de i18n cargados correctamente.");
+            } else {
+                throw new Error("ResourceBundle no válido");
+            }
+        } catch (error) {
+            console.error("Error al cargar ResourceBundle:", error);
+            oStrategyAnalysisModel.setProperty("/strategies", [
+                { key: "", text: "Error i18n: Seleccione..." },
+                { key: "MACrossover", text: "Error i18n: Cruce Medias..." }
+            ]);
+        }
+    } else {
+        console.error("Modelo i18n no encontrado. Usando textos por defecto.");
+        oStrategyAnalysisModel.setProperty("/strategies", [
+            { key: "", text: "No i18n: Seleccione..." },
+            { key: "MACrossover", text: "No i18n: Cruce Medias..." }
+        ]);
+    }
 
-          // Para el tamaño del Sidebar (tus cambios)
-          var oSidebarLayoutData = this.byId("sidebarLayoutData");
-          if (oSidebarLayoutData) {
-              this._sSidebarOriginalSize = oSidebarLayoutData.getSize();
-          } else {
-              var oSidebarVBox = this.byId("sidebarVBox");
-              if (oSidebarVBox && oSidebarVBox.getLayoutData()) {
-                  this._sSidebarOriginalSize = oSidebarVBox.getLayoutData().getSize();
-              }
-          }
-      },
-
+    // Para el tamaño del Sidebar
+    var oSidebarLayoutData = this.byId("sidebarLayoutData");
+    if (oSidebarLayoutData) {
+        this._sSidebarOriginalSize = oSidebarLayoutData.getSize();
+    } else {
+        var oSidebarVBox = this.byId("sidebarVBox");
+        if (oSidebarVBox && oSidebarVBox.getLayoutData()) {
+            this._sSidebarOriginalSize = oSidebarVBox.getLayoutData().getSize();
+        }
+    }
+},
       onTabSelect: function(oEvent) {
         var sKey = oEvent.getParameter("key");
         this.getView().getModel("viewModel").setProperty("/selectedTab", sKey);
@@ -305,6 +362,25 @@ _formatDate: function(oDate) {
     return oDate ? DateFormat.getDateInstance({pattern: "yyyy-MM-dd"}).format(oDate) : null;
 },
 
+    formatCurrency: function(value) {
+        if (!value) return "$0.00";
+        return `$${parseFloat(value).toFixed(2)}`;
+    },
+
+        formatDateRange: function(sStartDate, sEndDate) {
+        if (!sStartDate || !sEndDate) return "";
+        
+        const oDateFormat = sap.ui.core.format.DateFormat.getDateInstance({
+            pattern: "dd/MM/yyyy"
+        });
+        
+        const oStartDate = new Date(sStartDate);
+        const oEndDate = new Date(sEndDate);
+        
+        return oDateFormat.format(oStartDate) + " - " + oDateFormat.format(oEndDate);
+    },
+
+
 // Función auxiliar para preparar datos para la tabla
 _prepareTableData: function(aData) {
     if (!Array.isArray(aData)) return [];
@@ -362,6 +438,43 @@ _prepareTableData: function(aData) {
             }
         } else {
             console.warn("No se seleccionaron datos.");
+        }
+    },
+
+        //Historial de inversiones
+    onHistoryPress: function(oEvent) {
+        if (!this._oHistoryPopover) {
+            this._oHistoryPopover = sap.ui.xmlfragment(
+                "com.invertions.sapfiorimodinv.view.investments.fragments.InvestmentHistoryPanel",
+                this
+            );
+            this.getView().addDependent(this._oHistoryPopover);
+        }
+        
+        if (this._oHistoryPopover.isOpen()) {
+            this._oHistoryPopover.close();
+            return;
+        }
+        
+        // Abrir la ventana
+        this._oHistoryPopover.openBy(oEvent.getSource());
+
+        this.getView().setModel(new JSONModel({
+                isDeleteMode: false
+            }), "historyModel");
+    },
+
+        // ******** FILTRO ********** //
+    onToggleAdvancedFilters: function() {
+        if (!this._oHistoryPopover) return;
+
+        // Get panel directly from popover content
+        const oPanel = sap.ui.getCore().byId("advancedFiltersPanel");
+        
+        if (oPanel) {
+            oPanel.setVisible(!oPanel.getVisible());
+        } else {
+            console.warn("Advanced filters panel not found");
         }
     },
 
