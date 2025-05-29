@@ -81,7 +81,6 @@
                         </HBox>
 
                         <VBox width="100%">
-<<<<<<< HEAD
                             <Label text="{i18n>startDateLabelText}" />
                             <DatePicker
                                 id="startDatePickerInFragment"
@@ -105,28 +104,6 @@
                                 width="100%"
                             />
                         </VBox>
-=======
-                            
-                                <Label text="{i18n>startDateLabelText}"/>
-                                <DatePicker id="startDatePickerInFragment"
-                                    value="{
-                                        path: 'strategyAnalysisModel>/startDate', type: 'sap.ui.model.type.Date',
-                                        formatOptions: { pattern: 'yyyy-MM-dd' }
-                                    }"
-                                    displayFormat="long"
-                                    width="100%"/>
-                        </VBox>
-                        <VBox width="100%">
-                                <Label text="{i18n>endDateLabelText}"/>
-                                <DatePicker id="endDatePickerInFragment"
-                                    value="{
-                                        path: 'strategyAnalysisModel>/endDate', type: 'sap.ui.model.type.Date',
-                                        formatOptions: { pattern: 'yyyy-MM-dd' }
-                                    }"
-                                    displayFormat="long"
-                                    width="100%"/>
-                            </VBox>
->>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 
                         <Label
                             class="sapUiTinyMarginTop"
