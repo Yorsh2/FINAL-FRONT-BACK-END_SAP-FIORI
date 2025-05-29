@@ -211,7 +211,7 @@ sap.ui.define([
         }
       };
 
-      console.log("Payload a enviar:", JSON.stringify(payload, null, 2)); // debug
+      // console.log("Payload a enviar:", JSON.stringify(payload, null, 2)); // debug
 
       try {
         const res = await fetch("http://localhost:3333/api/security/rol/addOne", {
@@ -453,9 +453,9 @@ sap.ui.define([
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        console.log("Status:", res.status);
+        // console.log("Status:", res.status);
         const result = await res.json();
-        console.log("Response body:", result);
+        // console.log("Response body:", result);
 
         if (res.ok) {
           MessageToast.show("Rol actualizado correctamente");
@@ -558,11 +558,66 @@ sap.ui.define([
       });
     },
 
+    // ...existing code...
     onMultiSearch: function () {
-      const sQuery = this.byId("searchRoleName").getValue().toLowerCase();
+      const sQueryRaw = this.byId("searchRoleName").getValue();
+      const sQuery = this._normalizeText(sQueryRaw);
       const oBinding = this.byId("rolesTable").getBinding("rows");
-      const aFilters = sQuery ? [new Filter("ROLENAME", FilterOperator.Contains, sQuery)] : [];
-      oBinding.filter(aFilters);
-    }
+
+      if (sQuery) {
+        // Campos a buscar
+        const aSearchFields = [
+          "ROLEID",
+          "ROLENAME",
+          "DESCRIPTION"
+        ];
+
+        // Filtros por campos de texto
+        const aFilters = aSearchFields.map(sField =>
+          new sap.ui.model.Filter({
+            path: sField,
+            operator: sap.ui.model.FilterOperator.Contains,
+            value1: sQueryRaw
+          })
+        );
+
+        // Filtro por estado (Activo/Inactivo)
+        const oStatusFilter = new sap.ui.model.Filter({
+          path: "",
+          test: (oContext) => {
+            const bActive = oContext?.ACTIVO ?? oContext?.DETAIL_ROW?.ACTIVED;
+            const sStatus = this._normalizeText(bActive === true || bActive === "true" ? "activo" : "inactivo");
+            // Si la búsqueda es exactamente "activo" o "inactivo", solo muestra los que coinciden exactamente
+            if (sQuery === "activo" || sQuery === "inactivo") {
+              return sStatus === sQuery;
+            }
+            // Si la búsqueda es parcial, solo busca si empieza por la palabra (pero no permite que "activo" coincida con "inactivo")
+            return sStatus.startsWith(sQuery) && (sStatus === "activo" || sStatus === "inactivo");
+          }
+        });
+
+        // Combinar todos los filtros (OR)
+        const oCombinedFilter = new sap.ui.model.Filter([
+          ...aFilters,
+          oStatusFilter
+        ], false);
+
+        oBinding.filter(oCombinedFilter);
+      } else {
+        oBinding.filter([]);
+      }
+    },
+
+    // Añade esta función auxiliar si no la tienes:
+    _normalizeText: function (sText) {
+      if (!sText) return "";
+      return sText.toString()
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    },
+
+
+
   });
 });

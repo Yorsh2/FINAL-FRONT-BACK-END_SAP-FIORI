@@ -59,7 +59,7 @@
             "cozy": true
         },
         "models": {
-             "": { 
+            "": {
                 "type": "sap.ui.model.json.JSONModel"
             },
             "i18n": {
@@ -93,6 +93,11 @@
             "routes": [
                 {
                     "pattern": "",
+                    "name": "Login",
+                    "target": "TargetLogin"
+                },
+                {
+                    "pattern": "home",
                     "name": "RouteMain",
                     "target": "TargetMain"
                 },
@@ -101,12 +106,12 @@
                     "name": "RouteSalesForecast",
                     "target": "TargetSalesForecast"
                 },
-                    {
+                {
                     "pattern": "roles",
                     "name": "RouteRoles",
                     "target": "TargetRoles"
                 },
-                 {
+                {
                     "pattern": "users",
                     "name": "RouteUsersList",
                     "target": "TargetUsersList"
@@ -114,22 +119,22 @@
                 {
                     "pattern": "users/{USERID}",
                     "name": "RouteUserDetails",
-                    "target":"TargetUserDetails"
+                    "target": "TargetUserDetails"
                 },
-                 {
+                {
                     "pattern": "catalogs",
                     "name": "RouteCatalogs",
                     "target": "TargetCatalogs"
-                  },
-                  {
+                },
+                {
                     "pattern": "investments",
                     "name": "RouteInvestments",
                     "target": "TargetInvestments"
-                  },
+                },
                 {
-                    "pattern": "login",
-                    "name": "RouteLogin",
-                    "target": "TargetLogin" 
+                    "pattern": "invertions",
+                    "name": "RouteInvertionsCompanies",
+                    "target": "InvertionsCompanies"
                 }
             ],
             "targets": {
@@ -144,7 +149,7 @@
                     "viewType": "XML",
                     "viewPath": "com.invertions.sapfiorimodinv.view.salesforecast"
                 },
-                  "TargetRoles": {
+                "TargetRoles": {
                     "viewName": "Roles",
                     "viewId": "rolesSplitter",
                     "viewType": "XML",
@@ -156,7 +161,7 @@
                     "viewType": "XML",
                     "viewPath": "com.invertions.sapfiorimodinv.view.security"
                 },
-                "TargetUserDetails":{
+                "TargetUserDetails": {
                     "viewId": "UserDetails",
                     "viewName": "UserDetails",
                     "viewType": "XML",
@@ -178,7 +183,13 @@
                     "viewName": "Login",
                     "viewId": "login",
                     "viewType": "XML",
-                    "viewPath": "com.invertions.sapfiorimodinv.view.security"
+                    "viewPath": "com.invertions.sapfiorimodinv.view"
+                },
+                "InvertionsCompanies": {
+                    "viewName": "investments/Investments",
+                    "viewLevel": 1,
+                    "viewId": "investmentsPage",
+                    "viewType": "XML"
                 }
             }
         },

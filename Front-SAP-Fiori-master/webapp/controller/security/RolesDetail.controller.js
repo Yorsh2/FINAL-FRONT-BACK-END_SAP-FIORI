@@ -10,14 +10,14 @@ sap.ui.define([
 
   return BaseController.extend("com.invertions.sapfiorimodinv.controller.security.RolesDetail", {
 
-            onInit: function () {
-        const oModel = this.getView().getModel("selectedRole");
-        if (oModel) {
-          // console.log("selectedRole data", oModel.getData());
-        } else {
-          console.warn("Modelo 'selectedRole' no está disponible");
-        }
-      },
+    onInit: function () {
+      const oModel = this.getView().getModel("selectedRole");
+      if (oModel) {
+        // console.log("selectedRole data", oModel.getData());
+      } else {
+        console.warn("Modelo 'selectedRole' no está disponible");
+      }
+    },
 
     // Función para cargar los datos del rol desde backend y enriquecer procesos y usuarios
     async loadRoleDetails(sRoleId) {
@@ -33,20 +33,20 @@ sap.ui.define([
         ]);
 
         // 3. Enriquecer PRIVILEGES → PROCESSES
-          role.PROCESSES = role.PRIVILEGES.map(p => {
-            const proc = processes.find(pr => pr.VALUEID === p.PROCESSID);
-            const privs = (Array.isArray(p.PRIVILEGEID) ? p.PRIVILEGEID : [p.PRIVILEGEID])
-              .map(pid => privileges.find(pr => pr.VALUEID === pid))
-              .filter(Boolean);
+        role.PROCESSES = role.PRIVILEGES.map(p => {
+          const proc = processes.find(pr => pr.VALUEID === p.PROCESSID);
+          const privs = (Array.isArray(p.PRIVILEGEID) ? p.PRIVILEGEID : [p.PRIVILEGEID])
+            .map(pid => privileges.find(pr => pr.VALUEID === pid))
+            .filter(Boolean);
 
-            return {
-              PROCESSID: p.PROCESSID,
-              PROCESSNAME: proc?.VALUE || p.PROCESSID,
-              APPLICATIONNAME: proc?.DESCRIPTION || "-",
-              VIEWNAME: proc?.INDEX || "-",
-              PRIVILEGES: privs.map(x => ({ PRIVILEGENAME: x.VALUE }))
-            };
-          });
+          return {
+            PROCESSID: p.PROCESSID,
+            PROCESSNAME: proc?.VALUE || p.PROCESSID,
+            APPLICATIONNAME: proc?.DESCRIPTION || "-",
+            VIEWNAME: proc?.INDEX || "-",
+            PRIVILEGES: privs.map(x => ({ PRIVILEGENAME: x.VALUE }))
+          };
+        });
         // 4. Cargar usuarios con este rol
         const users = await this.loadAllUsers();
         role.USERS = users
@@ -94,6 +94,6 @@ sap.ui.define([
       const oRouter = sap.ui.core.UIComponent.getRouterFor(this);
       oRouter.navTo("RouteUsersList");
     }
-  
+
   });
 });

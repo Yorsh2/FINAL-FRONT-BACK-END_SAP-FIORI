@@ -103,7 +103,6 @@ sap.ui.define([
                     this.loadRoles();
                     this.loadCompanies();
 
-
                     this._oCreateUserDialog.open();
                 });
 
