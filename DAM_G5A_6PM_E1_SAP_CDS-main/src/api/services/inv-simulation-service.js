@@ -1212,16 +1212,28 @@ function calculateMovingAverageData(
         short_ma:
           shortSlice.length >= shortMa
             ? shortSlice.reduce(
+<<<<<<< HEAD
               (sum, p) => (p && p.close ? sum + p.close : sum),
               0
             ) / shortMa
+=======
+                (sum, p) => (p && p.close ? sum + p.close : sum),
+                0
+              ) / shortMa
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
             : null,
         long_ma:
           longSlice.length >= longMa
             ? longSlice.reduce(
+<<<<<<< HEAD
               (sum, p) => (p && p.close ? sum + p.close : sum),
               0
             ) / longMa
+=======
+                (sum, p) => (p && p.close ? sum + p.close : sum),
+                0
+              ) / longMa
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
             : null,
       };
     })
@@ -1596,6 +1608,7 @@ async function SimulateMACrossover(body) {
   }
 }
 
+<<<<<<< HEAD
 /*-----------------------------------------------------------------------------------------------------------
   Consultas para traer informacion de las simulaciones
 -----------------------------------------------------------------------------------------------------------*/
@@ -1610,10 +1623,15 @@ async function getAllSimulations() {
 }
 
 
+=======
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 module.exports = {
   SimulateMomentum,
   simulateSupertrend,
   reversionSimple,
   SimulateMACrossover,
+<<<<<<< HEAD
   getAllSimulations,
+=======
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 };

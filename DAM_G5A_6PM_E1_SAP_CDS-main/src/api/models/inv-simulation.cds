@@ -117,35 +117,60 @@ entity SIMULATION {
         AMOUNT         : Decimal(10, 2);
         SPECS          : array of INDICATOR;
         SIGNALS        : array of SIGNAL;
+<<<<<<< HEAD
         SUMMARY        : SUMMARY; // OBJETO DE RESUMEN
+=======
+        SUMMARY        : SUMMARY;         // OBJETO DE RESUMEN
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
         CHART_DATA     : array of CHARTDATA; // DATOS PARA EL GRÁFICO
         DETAIL_ROW     : array of DETAILROW; // DETALLES DE REGISTRO
 }
 
 // TIPO PARA LAS SEÑALES DE COMPRA/VENTA
 type SIGNAL {
+<<<<<<< HEAD
     DATE      : Date; // FORMATO "YYYY-MM-DD"
     TYPE      : String;
     PRICE     : Decimal(10, 2);
     REASONING : String;
     SHARES    : Decimal(18, 15); // ALTA PRECISIÓN
+=======
+    DATE      : Date;              // FORMATO "YYYY-MM-DD"
+    TYPE      : String;
+    PRICE     : Decimal(10, 2);
+    REASONING : String;
+    SHARES    : Decimal(18, 15);   // ALTA PRECISIÓN
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 }
 
 // TIPO PARA EL OBJETO DE RESUMEN
 type SUMMARY {
     TOTAL_BOUGHT_UNITS : Decimal(18, 4);
     TOTAL_SOLD_UNITS   : Decimal(18, 4);
+<<<<<<< HEAD
     REMAINING_UNITS    : Decimal(18, 4);
     FINAL_CASH         : Decimal(10, 2);
     FINAL_VALUE        : Decimal(10, 2);
     FINAL_BALANCE      : Decimal(10, 2);
     REAL_PROFIT        : Decimal(10, 2);
     PERCENTAGE_RETURN  : Decimal(18, 15); // ALTA PRECISIÓN
+=======
+    REMAINING_UNITS   : Decimal(18, 4);
+    FINAL_CASH        : Decimal(10, 2);
+    FINAL_VALUE       : Decimal(10, 2);
+    FINAL_BALANCE     : Decimal(10, 2);
+    REAL_PROFIT       : Decimal(10, 2);
+    PERCENTAGE_RETURN : Decimal(18, 15); // ALTA PRECISIÓN
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 }
 
 // TIPO PARA LOS DATOS DEL GRÁFICO
 type CHARTDATA {
+<<<<<<< HEAD
     DATE       : DateTime; // FORMATO ISO 8601
+=======
+    DATE       : DateTime;           // FORMATO ISO 8601
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
     OPEN       : Decimal(10, 2);
     HIGH       : Decimal(10, 2);
     LOW        : Decimal(10, 2);
@@ -174,3 +199,7 @@ type DETAILROWREG {
     REGTIME : String; // "HH:MM:SS"
     REGUSER : String;
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c

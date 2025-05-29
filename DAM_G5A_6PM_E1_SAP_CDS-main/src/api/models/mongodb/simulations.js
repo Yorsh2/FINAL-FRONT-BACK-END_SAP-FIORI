@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 
+<<<<<<< HEAD
 const INDICATOR_SCHEMA = new mongoose.Schema({
   INDICATOR: String,
   VALUE: Number
@@ -46,6 +47,72 @@ const DETAIL_ROW_SCHEMA = new mongoose.Schema({
   DELETED: Boolean,
   DETAIL_ROW_REG: { type: [DETAIL_ROW_REG_SCHEMA], default: [] }
 }, { _id: false });
+=======
+const INDICATOR_SCHEMA = new mongoose.Schema(
+  {
+    INDICATOR: String,
+    VALUE: Number,
+  },
+  { _id: false }
+);
+
+const CHART_DATA_SCHEMA = new mongoose.Schema(
+  {
+    DATE: { type: Date, required: true },
+    OPEN: Number,
+    HIGH: Number,
+    LOW: Number,
+    CLOSE: Number,
+    VOLUME: Number,
+    INDICATORS: { type: [INDICATOR_SCHEMA], default: [] },
+  },
+  { _id: false }
+);
+
+const SIGNAL_SCHEMA = new mongoose.Schema(
+  {
+    DATE: { type: Date, required: true },
+    TYPE: { type: String },
+    PRICE: { type: Number, required: true },
+    REASONING: { type: String },
+    SHARES: { type: Number, default: 0 },
+  },
+  { _id: false }
+);
+
+const SUMMARY_SCHEMA = new mongoose.Schema(
+  {
+    TOTAL_BOUGHT_UNITS: Number,
+    TOTAL_SOLDUNITS: Number,
+    REMAINING_UNITS: Number,
+    FINAL_CASH: Number,
+    FINAL_VALUE: Number,
+    FINAL_BALANCE: Number,
+    REAL_PROFIT: Number,
+    PERCENTAGE_RETURN: Number,
+  },
+  { _id: false }
+);
+
+const DETAIL_ROW_REG_SCHEMA = new mongoose.Schema(
+  {
+    CURRENT: Boolean,
+    REGDATE: Date,
+    REGTIME: String,
+    REGUSER: String,
+  },
+  { _id: false }
+);
+
+const DETAIL_ROW_SCHEMA = new mongoose.Schema(
+  {
+    ACTIVED: Boolean,
+    DELETED: Boolean,
+    DETAIL_ROW_REG: { type: [DETAIL_ROW_REG_SCHEMA], default: [] },
+  },
+  { _id: false }
+);
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
 
 const SIMULATION_SCHEMA = new mongoose.Schema({
   SIMULATIONID: { type: String, required: true },
@@ -60,8 +127,19 @@ const SIMULATION_SCHEMA = new mongoose.Schema({
   INDICATORS: { type: [INDICATOR_SCHEMA], default: [] },
   SUMMARY: SUMMARY_SCHEMA,
   CHART_DATA: { type: [CHART_DATA_SCHEMA], default: [] },
+<<<<<<< HEAD
   DETAIL_ROW: DETAIL_ROW_SCHEMA
 });
 
 
 module.exports = mongoose.model("ZTSIMULATIONS", SIMULATION_SCHEMA, "ZTSIMULATIONS");
+=======
+  DETAIL_ROW: DETAIL_ROW_SCHEMA,
+});
+
+module.exports = mongoose.model(
+  "ZTSIMULATIONS",
+  SIMULATION_SCHEMA,
+  "ZTSIMULATIONS"
+);
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c

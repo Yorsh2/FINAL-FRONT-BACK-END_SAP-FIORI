@@ -7,13 +7,21 @@
         placement="Bottom"
         showHeader="true"
         contentWidth="1100px"
+<<<<<<< HEAD
         contentHeight="500px"
+=======
+        contentHeight="auto"
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
         class="">
         <content>
             <!-- Barra de búsqueda y filtros -->
             <OverflowToolbar class="">
                 <SearchField
+<<<<<<< HEAD
                     id="searchField"
+=======
+                id="investmentHistorySearchField"
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
                     placeholder="Buscar por nombre o símbolo..."
                     search=".onSearch"
                     width="300px"
@@ -86,7 +94,11 @@
 
 
             <!-- Tabla -->
+<<<<<<< HEAD
             <ScrollContainer height="80%" vertical="true" horizontal="false" width="100%">
+=======
+            <ScrollContainer height="250px" vertical="true" horizontal="false" width="100%">
+>>>>>>> c4fe2c1f3528b9f0a963aabfe66e80ef1871b67c
                 <Table
                     id="historyTable"
                     items="{historyModel>/strategies}"
