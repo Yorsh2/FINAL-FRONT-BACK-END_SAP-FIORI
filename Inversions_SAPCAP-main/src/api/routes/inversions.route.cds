@@ -2,7 +2,7 @@
 
     @impl: 'src/api/controllers/inversions.controllers.js'
 
-    service inversionsRoute @(path: '/api/inv') {
+    service inversionsRoute @(path: '/api/inv/pruebas') {
         entity users         as projection on myinv.Users;
         entity strategies    as projection on myinv.strategies;
         entity simulation    as projection on myinv.Simulation;
